@@ -19,7 +19,6 @@ function InnerD() {
   const [editingWord, setEditingWord] = useState<AllWord | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isListSettingsOpen, setIsListSettingsOpen] = useState(false)
-  const [isPracticeMenuOpen, setIsPracticeMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const getUserId = () => {
@@ -53,7 +52,7 @@ function InnerD() {
       ));
 
       fetchWords();
-      setIsPracticeMenuOpen(false);
+      setIsMenuOpen(false);
       alert("All words have been reset!");
     } catch (error) {
       console.error('Error resetting words:', error);
@@ -491,38 +490,19 @@ function InnerD() {
             <div className="px-4 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900/30 border-b border-slate-700/50">Activities</div>
 
             <button
-              onClick={() => setIsPracticeMenuOpen(!isPracticeMenuOpen)}
-              className="w-full px-4 py-2 flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900/30 border-b border-slate-700/50 hover:bg-slate-900/50 transition-colors"
+              onClick={() => { setIsMenuOpen(false); navigate(`/practice/${id}`); }}
+              className='w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-600/20 text-blue-400 transition-all border-b border-slate-700'
             >
-              <div className="flex items-center gap-3">
-                <FaGraduationCap className="text-sky-400" />
-                <span>Practice</span>
-              </div>
-              <FaChevronDown className={`transition-transform duration-300 ${isPracticeMenuOpen ? 'rotate-180' : ''}`} />
+              <FaGraduationCap className="text-blue-400 text-lg" />
+              <span className="text-sm font-medium">Practice</span>
             </button>
 
-            {isPracticeMenuOpen && (
-              <div className="bg-slate-900/20">
-                <button
-                  onClick={() => navigate(`/practice/${id}?mode=writing`)}
-                  className='w-full flex items-center gap-3 px-8 py-3 hover:bg-sky-600/20 text-sky-400 transition-all border-b border-slate-700'
-                >
-                  <span className="text-xs font-bold uppercase tracking-tight">Writing Mode</span>
-                </button>
-                <button
-                  onClick={() => navigate(`/practice/${id}?mode=cards`)}
-                  className='w-full flex items-center gap-3 px-8 py-3 hover:bg-emerald-600/20 text-emerald-400 transition-all border-b border-slate-700'
-                >
-                  <span className="text-xs font-bold uppercase tracking-tight">Cards Mode</span>
-                </button>
-                <button
-                  onClick={resetAllWords}
-                  className='w-full flex items-center gap-3 px-8 py-3 hover:bg-orange-600/20 text-orange-400 transition-all border-b border-slate-700'
-                >
-                  <span className="text-xs font-bold uppercase tracking-tight">Reset All Progress</span>
-                </button>
-              </div>
-            )}
+            <button
+              onClick={resetAllWords}
+              className='w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-600/20 text-orange-400 transition-all border-b border-slate-700'
+            >
+              <span className="text-xs font-bold uppercase tracking-tight">Reset All Progress</span>
+            </button>
 
             <div className="px-4 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900/30 border-b border-slate-700/50">Visibility Mode</div>
             <div className="px-4 py-4">
@@ -564,6 +544,15 @@ function InnerD() {
         <Input placeholder='search the word' paddingX='px-3' paddingY='py-2' width='w-full' value={value} setValue={setValue} onchange={(v) => setValue(v)}/>
         <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"/>
       </div>
+
+      <button
+        onClick={() => navigate(`/practice/${id}`)}
+        className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-xl shadow-lg shadow-blue-900/25 text-xs sm:text-sm uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+        title="Start Practice"
+      >
+        <FaGraduationCap className="text-base sm:text-lg" />
+        <span className="hidden sm:inline">Practice</span>
+      </button>
     </div>
 
     <div className="flex flex-col w-full max-w-3xl mx-auto pb-10">

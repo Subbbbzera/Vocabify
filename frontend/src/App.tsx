@@ -25,6 +25,7 @@ function App() {
     <Route path='/' element={<Home/>}/>
     <Route path='/mainDictionary' element={<MainDictionary/>}/>
     <Route path='/InnerD/:id' element={<InnerD/>}/>
+    <Route path='/practice' element={<Practice/>}/>
     <Route path='/practice/:id' element={<Practice/>}/>
     <Route path='/WordDetails/:id' element={<WordDetails/>}/>
     <Route path='/account' element={<Account/>}/>

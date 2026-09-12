@@ -3,8 +3,7 @@
 @tailwind utilities;
 
 body {
-  /* Світліший темний колір для всього додатка */
-  background-color: #11192e;
+  background-color: #0f172a;
   color: white;
   margin: 0;
 }
