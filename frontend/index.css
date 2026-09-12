@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  /* Світліший темний колір для всього додатка */
+  background-color: #11192e;
+  color: white;
+  margin: 0;
+}
