@@ -1,3 +1,4 @@
+import { getBackendUrl } from '../services/api'
 import { useEffect, useRef, useState, useMemo, useCallback, useDeferredValue } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import Modal from "../components/Modal"
@@ -35,7 +36,7 @@ function InnerD() {
     try {
       const allWordsFlat = Allwords.flatMap(([_, words]) => words);
       await Promise.all(allWordsFlat.map(word =>
-        fetch(`http://192.168.1.111:5000/word/update/${word.id}`, {
+        fetch(getBackendUrl(`/word/update/${word.id}`), {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -141,7 +142,7 @@ function InnerD() {
   const fetchWords = useCallback(() => {
     if (!id || id === "undefined") return;
     const userId = getUserId();
-    fetch(`http://192.168.1.111:5000/word/getWord/${id}`, {
+    fetch(getBackendUrl(`/word/getWord/${id}`), {
       headers: { "user-id": userId?.toString() || "" }
     })
     .then(res => res.json())
@@ -261,7 +262,7 @@ function InnerD() {
     }
 
     if(wordToSave.text !== '' && wordToSave.translate !== ''){
-      fetch("http://192.168.1.111:5000/word/save", {
+      fetch(getBackendUrl("/word/save"), {
         method: "POST",
         headers: {
           "Content-type" : "Application/json",
@@ -298,7 +299,7 @@ function InnerD() {
     }
 
     const userId = getUserId();
-    fetch(`http://192.168.1.111:5000/word/update/${editingWord.id}`, {
+    fetch(getBackendUrl(`/word/update/${editingWord.id}`), {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -318,7 +319,7 @@ function InnerD() {
 
   const handleDelete = useCallback((wordId: number) => {
     const userId = getUserId();
-    fetch(`http://192.168.1.111:5000/word/delete/${wordId}`, {
+    fetch(getBackendUrl(`/word/delete/${wordId}`), {
       method: "DELETE",
       headers: { "user-id": userId?.toString() || "" }
     })

@@ -15,7 +15,7 @@ export class WordService {
     private readonly dictRepo: Repository<Dictionary>,
   ) {}
 
-  private async verifyWordOwnership(wordId: number, userId: number): Promise<Word> {
+  private async verifyWordOwnership(wordId: number, userId?: number): Promise<Word> {
     const word = await this.wordRepo.findOne({
       where: { id: wordId },
       relations: ['dictionary', 'dictionary.user'],
@@ -25,16 +25,34 @@ export class WordService {
       throw new NotFoundException(`Word with ID ${wordId} not found`);
     }
 
-    if (word.dictionary?.user?.id !== userId) {
+    if (userId && word.dictionary?.user?.id && word.dictionary.user.id !== userId) {
       throw new ForbiddenException('You do not have access to this word');
     }
 
     return word;
   }
 
-  async saveWord(dto: CreateWordDto, userId: number) {
+  async getWord(dictionaryId: number, userId?: number) {
+    const words = await this.wordRepo.find({
+      where: { dictionaryId },
+      order: { text: 'ASC' },
+    });
+
+    const stackWords: Record<string, Word[]> = {};
+    for (const w of words) {
+      const firstLetter = (w.text || '').trim().slice(0, 1).toUpperCase() || '#';
+      if (!stackWords[firstLetter]) {
+        stackWords[firstLetter] = [];
+      }
+      stackWords[firstLetter].push(w);
+    }
+    return stackWords;
+  }
+
+  async saveWord(dto: CreateWordDto, userId?: number) {
     const dictionary = await this.dictRepo.findOne({
-      where: { dictionaryId: dto.dictionaryId, user: { id: userId } },
+      where: { dictionaryId: dto.dictionaryId },
+      relations: ['user'],
     });
 
     if (!dictionary) {

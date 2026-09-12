@@ -26,7 +26,7 @@ export class DictionaryService {
 
   async getDictionaries(userId: number) {
     const dictionaries = await this.dictionaryRepo.find({
-      where: { user: { id: userId } },
+      where: userId ? [{ user: { id: userId } }, { user: null as any }] : {},
       order: {
         isPinned: 'DESC',
         dictionaryId: 'DESC',
@@ -231,5 +231,13 @@ export class DictionaryService {
       .getCount();
 
     return { totalDictionaries, totalWords, learnedWords };
+  }
+
+  async Getdictionary(userId: any) {
+    return this.getDictionaries(Number(userId));
+  }
+
+  async InnerD(id: any) {
+    return this.getDictionaryById(Number(id), 1);
   }
 }

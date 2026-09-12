@@ -9,6 +9,13 @@ async function startServer() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
+  app.use((req: any, res: any, next: any) => {
+    if (!req.url.startsWith('/api') && !req.url.startsWith('/socket.io')) {
+      req.url = '/api' + req.url;
+    }
+    next();
+  });
+
   app.setGlobalPrefix('api');
 
   app.use(json({ limit: '10mb' }));

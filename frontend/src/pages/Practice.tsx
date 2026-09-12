@@ -1,3 +1,4 @@
+import { getBackendUrl } from '../services/api'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaXmark, FaVolumeHigh, FaRotateLeft, FaCalendarDays, FaClockRotateLeft, FaLayerGroup, FaBook, FaSliders, FaTrash } from 'react-icons/fa6';
@@ -170,7 +171,7 @@ function Practice() {
   const fetchWords = useCallback(() => {
     if (!id) return;
     const userId = getUserId();
-    fetch(`http://192.168.1.111:5000/word/getWord/${id}`, {
+    fetch(getBackendUrl(`/word/getWord/${id}`), {
       headers: { "user-id": userId?.toString() || "" }
     })
       .then(res => res.json())
@@ -229,7 +230,7 @@ function Practice() {
 
     const userId = getUserId();
     if (userId) {
-      fetch("http://192.168.1.111:5000/auth/record-practice", {
+      fetch(getBackendUrl("/auth/record-practice"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId })
@@ -260,7 +261,7 @@ function Practice() {
   const markAsLearned = async (word: AllWord) => {
     const userId = getUserId();
     try {
-      await fetch(`http://192.168.1.111:5000/word/update/${word.id}`, {
+      await fetch(getBackendUrl(`/word/update/${word.id}`), {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

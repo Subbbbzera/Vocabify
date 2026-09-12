@@ -6,6 +6,7 @@ import Modal from '../components/Modal'
 import Dictionaty from '../components/forDictionaries/Dictionaty'
 import { useNavigate } from 'react-router-dom'
 import type { MainDictionaries } from '../types'
+import { getBackendUrl } from '../services/api'
 
 export type ModalData = {
   field1: string,
@@ -43,7 +44,7 @@ const getUserId = () => {
 
 const fetchDictionaries = () => {
   const userId = getUserId();
-  fetch("http://192.168.1.111:5000/dictionary/Getdictionary", {
+  fetch(getBackendUrl("/dictionary/Getdictionary"), {
     headers: { "user-id": userId?.toString() || "" }
   })
   .then(res => res.json())
@@ -82,7 +83,7 @@ const Create = (object : ModalData) =>{
 
    if(dictionaryToSave.dictionaryName.trim() && dictionaryToSave.language.trim()){
 
-    fetch("http://192.168.1.111:5000/dictionary/create", {
+    fetch(getBackendUrl("/dictionary/create"), {
       method: "POST",
       headers: {
         "Content-Type":"application/json",
@@ -124,7 +125,7 @@ const SmartImport = (object: ModalData) => {
   }).filter(w => w !== null);
 
   if (words.length > 0) {
-    fetch("http://192.168.1.111:5000/dictionary/import", {
+    fetch(getBackendUrl("/dictionary/import"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -160,7 +161,7 @@ const handleRenameClick = (dictionary: MainDictionaries) => {
 const ConfirmUpdate = (object: ModalData) => {
   if (editingDictionary && object.field1.trim()) {
     const userId = getUserId();
-    fetch("http://192.168.1.111:5000/dictionary/update", {
+    fetch(getBackendUrl("/dictionary/update"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -194,7 +195,7 @@ const ConfirmUpdate = (object: ModalData) => {
 const handleDeleteDictionary = () => {
   if (editingDictionary) {
     const userId = getUserId();
-    fetch(`http://192.168.1.111:5000/dictionary/delete`, {
+    fetch(getBackendUrl(`/dictionary/delete`), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -213,7 +214,7 @@ const handleDeleteDictionary = () => {
 const handleCopyDictionary = () => {
   if (editingDictionary) {
     const userId = getUserId();
-    fetch(`http://192.168.1.111:5000/dictionary/copy`, {
+    fetch(getBackendUrl(`/dictionary/copy`), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -233,7 +234,7 @@ const handleCopyDictionary = () => {
 const togglePinDictionary = (dict: MainDictionaries, e: React.MouseEvent) => {
   e.stopPropagation();
   const userId = getUserId();
-  fetch(`http://192.168.1.111:5000/dictionary/update`, {
+  fetch(getBackendUrl(`/dictionary/update`), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -253,7 +254,7 @@ const togglePinDictionary = (dict: MainDictionaries, e: React.MouseEvent) => {
 const fetchWordsForExport = async (dictionaryId: number): Promise<any[]> => {
   const userId = getUserId();
   try {
-    const res = await fetch(`http://192.168.1.111:5000/word/getWord/${dictionaryId}`, {
+    const res = await fetch(getBackendUrl(`/word/getWord/${dictionaryId}`), {
       headers: { "user-id": userId?.toString() || "" }
     });
     const data = await res.json();

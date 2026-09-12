@@ -12,6 +12,14 @@ const getApiBaseUrl = (): string => {
 
 const BASE_URL = getApiBaseUrl();
 
+export const getBackendUrl = (path: string = ''): string => {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (typeof window !== 'undefined' && window.location) {
+    return `${window.location.protocol}//${window.location.hostname}:5000${cleanPath}`;
+  }
+  return `http://localhost:5000${cleanPath}`;
+};
+
 export const getToken = (): string | null => {
   return localStorage.getItem('token');
 };
