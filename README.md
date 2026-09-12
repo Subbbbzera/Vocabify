@@ -26,7 +26,26 @@ nestproj/
 └── README.md
 ```
 
-## Getting Started
+## Quick Start with Docker
+
+Run the entire application stack (Frontend, Backend, and PostgreSQL) with a single command:
+
+```bash
+docker compose up --build
+```
+
+- **Frontend:** `http://localhost:5173`
+- **Backend API:** `http://localhost:5000/api`
+- **PostgreSQL:** `localhost:5432`
+
+To stop all services:
+```bash
+docker compose down
+```
+
+---
+
+## Manual Local Setup
 
 ### Prerequisites
 
