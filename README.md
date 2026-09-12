@@ -17,6 +17,17 @@ A full-stack vocabulary learning web application with spaced practice, daily str
 - **Notifications:** Configurable reminders for streaks and practice reviews with a master toggle and category preferences.
 - **Responsive UI:** Dark slate interface optimized for both mobile (bottom navigation bar) and desktop (collapsible sidebar).
 
+## Screenshots
+
+<p align="center">
+  <img src="frontend/public/ScreenShots/MainPage.jpg" width="49%" alt="Main Page" />
+  <img src="frontend/public/ScreenShots/Dictionaries.jpg" width="49%" alt="Dictionaries" />
+</p>
+<p align="center">
+  <img src="frontend/public/ScreenShots/Profile.jpg" width="49%" alt="Profile & Streaks" />
+  <img src="frontend/public/ScreenShots/Notifications.jpg" width="49%" alt="Notifications" />
+</p>
+
 ## Project Structure
 
 ```
