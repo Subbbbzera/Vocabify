@@ -1,23 +1,37 @@
 const getApiBaseUrl = (): string => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
-  if (envUrl && envUrl.trim() !== '' && envUrl !== 'http://localhost:5000/api') {
-    return envUrl.replace(/\/+$/, '');
+  const envBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envBaseUrl && envBaseUrl.trim() !== '' && envBaseUrl !== '/api' && !envBaseUrl.includes('localhost:5000')) {
+    return envBaseUrl.replace(/\/+$/, '');
+  }
+
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  if (envApiUrl && envApiUrl.trim() !== '') {
+    return `${envApiUrl.replace(/\/+$/, '').replace(/\/api$/, '')}/api`;
   }
 
   if (typeof window !== 'undefined' && window.location) {
     return '/api';
   }
-  return 'http://localhost:5000/api';
+  return 'http://127.0.0.1:5000/api';
 };
 
 const BASE_URL = getApiBaseUrl();
 
 export const getBackendUrl = (path: string = ''): string => {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  if (typeof window !== 'undefined' && window.location) {
-    return `${window.location.protocol}//${window.location.hostname}:5000${cleanPath}`;
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  if (envApiUrl && envApiUrl.trim() !== '') {
+    return `${envApiUrl.replace(/\/+$/, '').replace(/\/api$/, '')}${cleanPath}`;
   }
-  return `http://localhost:5000${cleanPath}`;
+
+  if (typeof window !== 'undefined' && window.location) {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocal) {
+      return `${window.location.protocol}//127.0.0.1:5000${cleanPath}`;
+    }
+    return `${window.location.origin}${cleanPath}`;
+  }
+  return `http://127.0.0.1:5000${cleanPath}`;
 };
 
 export const getToken = (): string | null => {

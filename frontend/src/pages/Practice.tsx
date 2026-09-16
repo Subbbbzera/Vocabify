@@ -4,7 +4,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaXmark, FaVolumeHigh, FaRotateLeft } from 'react-icons/fa6';
 import type { AllWord } from '../types';
 
-type FilterType = 'unlearned' | 'all' | 'learned' | 'custom';
+type FilterType = 'due' | 'unlearned' | 'all' | 'learned' | 'custom';
 
 function Practice() {
   const { id } = useParams();
@@ -36,9 +36,10 @@ function Practice() {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [showWritingHint, setShowWritingHint] = useState(false);
+  const [showLetterHint, setShowLetterHint] = useState(false);
 
   const [isSetupOpen, setIsSetupOpen] = useState(true);
-  const [filterType, setFilterType] = useState<FilterType>('unlearned');
+  const [filterType, setFilterType] = useState<FilterType>('due');
 
   const [activeLetters, setActiveLetters] = useState<string[]>([]);
   const [selectedWordIds, setSelectedWordIds] = useState<number[]>([]);
@@ -100,13 +101,21 @@ function Practice() {
 
   const unlearnedWords = React.useMemo(() => allFetchedWords.filter(w => !w.remembered), [allFetchedWords]);
   const learnedWords = React.useMemo(() => allFetchedWords.filter(w => w.remembered), [allFetchedWords]);
+  const dueWords = React.useMemo(() => {
+    const now = new Date();
+    return allFetchedWords.filter(w => {
+      if (!w.remembered) return true; // Always practice new words
+      if (w.nextReviewDate && new Date(w.nextReviewDate) <= now) return true;
+      return false;
+    });
+  }, [allFetchedWords]);
 
-  // Default to 'all' if dictionary has words but 0 unlearned
+  // Default to 'all' if dictionary has words but 0 due
   useEffect(() => {
-    if (allFetchedWords.length > 0 && unlearnedWords.length === 0 && filterType === 'unlearned') {
+    if (allFetchedWords.length > 0 && dueWords.length === 0 && filterType === 'due') {
       setFilterType('all');
     }
-  }, [allFetchedWords, unlearnedWords.length, filterType]);
+  }, [allFetchedWords, dueWords.length, filterType]);
 
   const wordsByLetter = React.useMemo(() => {
     const groups: Record<string, AllWord[]> = {};
@@ -235,17 +244,20 @@ function Practice() {
   };
 
   const targetWordsCount = React.useMemo(() => {
+    if (filterType === 'due') return dueWords.length;
     if (filterType === 'unlearned') return unlearnedWords.length;
     if (filterType === 'all') return allFetchedWords.length;
     if (filterType === 'learned') return learnedWords.length;
     if (filterType === 'custom') return selectedWordIds.length;
     return 0;
-  }, [filterType, unlearnedWords.length, allFetchedWords.length, learnedWords.length, selectedWordIds.length]);
+  }, [filterType, dueWords.length, unlearnedWords.length, allFetchedWords.length, learnedWords.length, selectedWordIds.length]);
 
   const startPractice = () => {
     let filtered: AllWord[] = [];
 
-    if (filterType === 'unlearned') {
+    if (filterType === 'due') {
+      filtered = dueWords;
+    } else if (filterType === 'unlearned') {
       filtered = unlearnedWords;
     } else if (filterType === 'learned') {
       filtered = learnedWords;
@@ -301,6 +313,16 @@ function Practice() {
 
   const markAsLearned = async (word: AllWord) => {
     const userId = getUserId();
+    let nextInterval = 3;
+    if (word.remembered && word.interval) {
+      if (word.interval === 3) nextInterval = 7;
+      else if (word.interval === 7) nextInterval = 30;
+      else nextInterval = 30;
+    }
+
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + nextInterval);
+
     try {
       await fetch(getBackendUrl(`/word/update/${word.id}`), {
         method: "PATCH",
@@ -308,7 +330,23 @@ function Practice() {
           "Content-Type": "application/json",
           "user-id": userId?.toString() || ""
         },
-        body: JSON.stringify({ remembered: true })
+        body: JSON.stringify({ remembered: true, interval: nextInterval, nextReviewDate: nextDate.toISOString() })
+      });
+    } catch (error) {
+      console.error('Error updating word:', error);
+    }
+  };
+
+  const markAsForgotten = async (word: AllWord) => {
+    const userId = getUserId();
+    try {
+      await fetch(getBackendUrl(`/word/update/${word.id}`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "user-id": userId?.toString() || ""
+        },
+        body: JSON.stringify({ remembered: false, interval: 0, nextReviewDate: null })
       });
     } catch (error) {
       console.error('Error updating word:', error);
@@ -329,10 +367,12 @@ function Practice() {
       });
     } else {
       setIsCorrect(false);
-      setTimeout(() => {
-        setIsCorrect(null);
-        nextWord(true);
-      }, 1000);
+      markAsForgotten(currentWord).then(() => {
+        setTimeout(() => {
+          setIsCorrect(null);
+          nextWord(true);
+        }, 1000);
+      });
     }
   };
 
@@ -350,6 +390,8 @@ function Practice() {
     setIsCorrect(null);
     setIsFlipped(false);
     setDragOffset(0);
+    setShowWritingHint(false);
+    setShowLetterHint(false);
   };
 
   const handleCardResult = (known: boolean) => {
@@ -361,9 +403,11 @@ function Practice() {
       });
     } else {
       setIsCorrect(false);
-      setTimeout(() => {
-        nextWord(true);
-      }, 800);
+      markAsForgotten(currentWord).then(() => {
+        setTimeout(() => {
+          nextWord(true);
+        }, 800);
+      });
     }
   };
 
@@ -488,35 +532,47 @@ function Practice() {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setFilterType('due')}
+                className={`flex-1 min-w-[100px] py-2 px-2.5 rounded-lg border text-center transition-colors cursor-pointer select-none text-xs font-semibold ${
+                  filterType === 'due'
+                    ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                Due ({dueWords.length})
+              </button>
+
               <button
                 type="button"
                 onClick={() => setFilterType('unlearned')}
-                className={`py-2 px-2.5 rounded-lg border text-center transition-colors cursor-pointer select-none text-xs font-semibold ${
+                className={`flex-1 min-w-[100px] py-2 px-2.5 rounded-lg border text-center transition-colors cursor-pointer select-none text-xs font-semibold ${
                   filterType === 'unlearned'
                     ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
                     : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
                 }`}
               >
-                Unlearned ({unlearnedWords.length})
+                New ({unlearnedWords.length})
               </button>
 
               <button
                 type="button"
                 onClick={() => setFilterType('all')}
-                className={`py-2 px-2.5 rounded-lg border text-center transition-colors cursor-pointer select-none text-xs font-semibold ${
+                className={`flex-1 min-w-[100px] py-2 px-2.5 rounded-lg border text-center transition-colors cursor-pointer select-none text-xs font-semibold ${
                   filterType === 'all'
                     ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
                     : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
                 }`}
               >
-                All Words ({allFetchedWords.length})
+                All ({allFetchedWords.length})
               </button>
 
               <button
                 type="button"
                 onClick={() => setFilterType('learned')}
-                className={`py-2 px-2.5 rounded-lg border text-center transition-colors cursor-pointer select-none text-xs font-semibold ${
+                className={`flex-1 min-w-[100px] py-2 px-2.5 rounded-lg border text-center transition-colors cursor-pointer select-none text-xs font-semibold ${
                   filterType === 'learned'
                     ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
                     : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
@@ -528,7 +584,7 @@ function Practice() {
               <button
                 type="button"
                 onClick={() => setFilterType('custom')}
-                className={`py-2 px-2.5 rounded-lg border text-center transition-colors cursor-pointer select-none text-xs font-semibold ${
+                className={`flex-1 min-w-[100px] py-2 px-2.5 rounded-lg border text-center transition-colors cursor-pointer select-none text-xs font-semibold ${
                   filterType === 'custom'
                     ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
                     : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
@@ -836,10 +892,7 @@ function Practice() {
               </button>
             </div>
 
-            <div
-              className="cursor-pointer group relative mb-10"
-              onClick={() => setShowWritingHint(!showWritingHint)}
-            >
+            <div className="cursor-pointer group relative mb-6" onClick={() => setShowWritingHint(!showWritingHint)}>
               <h1 className="text-3xl sm:text-4xl font-bold text-white break-words transition-colors group-hover:text-blue-400 leading-tight">
                 {direction === 'origToTrans' ? currentWord.text : currentWord.translate}
               </h1>
@@ -848,7 +901,7 @@ function Practice() {
                   {direction === 'origToTrans' ? currentWord.translate : currentWord.text}
                 </span>
               </div>
-              {!showWritingHint && <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-1.5">Tap for hint</p>}
+              {!showWritingHint && <p className="text-[10px] text-slate-500 uppercase tracking-wider mt-1.5">Tap for full answer</p>}
             </div>
 
             <form onSubmit={handleCheck} className="relative">
@@ -864,7 +917,26 @@ function Practice() {
                     'border-slate-700 focus:border-blue-500 shadow-inner'}`}
               />
 
-              <div className="flex gap-3 mt-6">
+              {/* First-letter hint */}
+              <div className="flex items-center justify-center mt-3 min-h-[22px]">
+                {showLetterHint ? (
+                  <span className="text-xs text-amber-400 font-semibold tracking-widest">
+                    Starts with: <span className="text-amber-300 text-base font-bold uppercase">
+                      {(direction === 'origToTrans' ? currentWord.translate : currentWord.text)?.[0] ?? '?'}
+                    </span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowLetterHint(true)}
+                    className="text-[10px] text-slate-500 hover:text-amber-400 uppercase tracking-wider transition-colors font-medium flex items-center gap-1"
+                  >
+                    💡 Show first letter
+                  </button>
+                )}
+              </div>
+
+              <div className="flex gap-3 mt-4">
                 <button
                   type="button"
                   onClick={() => nextWord(false)}
@@ -959,23 +1031,6 @@ function Practice() {
               </div>
             </div>
 
-            {/* Quick action buttons below card */}
-            <div className="flex items-center justify-center gap-3 mt-5 w-full max-w-xs">
-              <button
-                onClick={() => handleCardResult(false)}
-                className="flex-1 py-2.5 bg-slate-800 hover:bg-rose-600/20 text-rose-400 hover:border-rose-500/50 border border-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
-              >
-                <FaXmark size={14} />
-                <span>Repeat</span>
-              </button>
-              <button
-                onClick={() => handleCardResult(true)}
-                className="flex-1 py-2.5 bg-slate-800 hover:bg-emerald-600/20 text-emerald-400 hover:border-emerald-500/50 border border-slate-700 rounded-xl font-semibold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow"
-              >
-                <FaCheck size={14} />
-                <span>Mastered</span>
-              </button>
-            </div>
           </div>
         )}
 

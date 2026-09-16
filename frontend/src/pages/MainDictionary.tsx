@@ -47,17 +47,33 @@ const fetchDictionaries = () => {
   fetch(getBackendUrl("/dictionary/Getdictionary"), {
     headers: { "user-id": userId?.toString() || "" }
   })
-  .then(res => res.json())
-  .then(data => setDictionaries(data))
+  .then(res => {
+    if (!res.ok) {
+      throw new Error(`Server error: ${res.status}`);
+    }
+    return res.json();
+  })
+  .then(data => {
+    if (Array.isArray(data)) {
+      setDictionaries(data);
+    } else {
+      console.warn("Expected array of dictionaries, got:", data);
+      setDictionaries([]);
+    }
+  })
+  .catch(err => {
+    console.error("Failed to fetch dictionaries:", err);
+    setDictionaries([]);
+  });
 }
 
 useEffect(() => {
   fetchDictionaries()
 }, [])
 
-const filteredDictionaries = dictionaries.filter(d =>
-  (d.dictionaryName?.toLowerCase() || "").includes(searchValue.toLowerCase()) ||
-  (d.language?.toLowerCase() || "").includes(searchValue.toLowerCase())
+const filteredDictionaries = (Array.isArray(dictionaries) ? dictionaries : []).filter(d =>
+  (d?.dictionaryName?.toLowerCase() || "").includes(searchValue.toLowerCase()) ||
+  (d?.language?.toLowerCase() || "").includes(searchValue.toLowerCase())
 )
 
 const Close = () =>{

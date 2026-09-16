@@ -144,8 +144,15 @@ function InnerD() {
     fetch(getBackendUrl(`/word/getWord/${id}`), {
       headers: { "user-id": userId?.toString() || "" }
     })
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      return res.json();
+    })
     .then(data => {
+      if (!data || typeof data !== 'object' || (data as any).statusCode) {
+        console.warn("Expected word dictionary map, received:", data);
+        return;
+      }
 
       const merged: {[key: string]: AllWord[]} = {};
       const lookalikes: {[key: string]: string} = {
@@ -153,6 +160,7 @@ function InnerD() {
       };
 
       Object.entries(data).forEach(([letter, words]) => {
+        if (!Array.isArray(words)) return;
         const upLetter = letter.toUpperCase().trim();
         const normalized = lookalikes[upLetter] || upLetter;
         if (!merged[normalized]) merged[normalized] = [];
@@ -165,6 +173,9 @@ function InnerD() {
       setValue("")
       setVisibleCount(40)
       headerRefs.current = {};
+    })
+    .catch(err => {
+      console.error("Failed to fetch words:", err);
     })
   }, [id])
 
@@ -547,7 +558,7 @@ function InnerD() {
 
       <button
         onClick={() => navigate(`/practice/${id}`)}
-        className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-xl shadow-lg shadow-blue-900/25 text-xs sm:text-sm uppercase tracking-wider transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+        className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 hover:bg-blue-600 text-white font-semibold rounded-xl text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 flex-shrink-0"
         title="Start Practice"
       >
         <FaGraduationCap className="text-base sm:text-lg" />

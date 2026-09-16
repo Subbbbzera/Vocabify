@@ -9,6 +9,7 @@ import WordDetails from './pages/WordDetails'
 import Account from './pages/Account'
 import Notifications from './pages/Notifications'
 import Friends from './pages/Friends'
+import ProtectedRoute from './components/ProtectedRoute'
 
 
 function App() {
@@ -23,14 +24,29 @@ function App() {
   <Routes>
 
     <Route path='/' element={<Home/>}/>
-    <Route path='/mainDictionary' element={<MainDictionary/>}/>
-    <Route path='/InnerD/:id' element={<InnerD/>}/>
-    <Route path='/practice' element={<Practice/>}/>
-    <Route path='/practice/:id' element={<Practice/>}/>
-    <Route path='/WordDetails/:id' element={<WordDetails/>}/>
     <Route path='/account' element={<Account/>}/>
-    <Route path='/notifications' element={<Notifications/>}/>
-    <Route path='/friends' element={<Friends/>}/>
+
+    <Route path='/mainDictionary' element={
+      <ProtectedRoute><MainDictionary/></ProtectedRoute>
+    }/>
+    <Route path='/InnerD/:id' element={
+      <ProtectedRoute><InnerD/></ProtectedRoute>
+    }/>
+    <Route path='/practice' element={
+      <ProtectedRoute><Practice/></ProtectedRoute>
+    }/>
+    <Route path='/practice/:id' element={
+      <ProtectedRoute><Practice/></ProtectedRoute>
+    }/>
+    <Route path='/WordDetails/:id' element={
+      <ProtectedRoute><WordDetails/></ProtectedRoute>
+    }/>
+    <Route path='/notifications' element={
+      <ProtectedRoute><Notifications/></ProtectedRoute>
+    }/>
+    <Route path='/friends' element={
+      <ProtectedRoute><Friends/></ProtectedRoute>
+    }/>
   </Routes>
 
 
@@ -40,3 +56,4 @@ function App() {
 }
 
 export default App
+

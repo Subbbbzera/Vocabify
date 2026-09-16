@@ -1,4 +1,4 @@
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, IsArray } from 'class-validator';
 
 export class CreateWordDto {
   @IsString()
@@ -14,9 +14,9 @@ export class CreateWordDto {
   @IsOptional()
   extraForms?: string[];
 
-  @IsString({ each: true })
+  @IsArray()
   @IsOptional()
-  examples?: string[];
+  examples?: any[];
 
   @IsBoolean()
   @IsOptional()
@@ -29,6 +29,13 @@ export class CreateWordDto {
   @IsBoolean()
   @IsOptional()
   important?: boolean;
+
+  @IsOptional()
+  nextReviewDate?: Date | null;
+
+  @IsNumber()
+  @IsOptional()
+  interval?: number;
 }
 
 export class UpdateWordDto {
@@ -44,9 +51,9 @@ export class UpdateWordDto {
   @IsOptional()
   extraForms?: string[];
 
-  @IsString({ each: true })
+  @IsArray()
   @IsOptional()
-  examples?: string[];
+  examples?: any[];
 
   @IsBoolean()
   @IsOptional()
@@ -59,4 +66,11 @@ export class UpdateWordDto {
   @IsBoolean()
   @IsOptional()
   important?: boolean;
+
+  @IsOptional()
+  nextReviewDate?: Date | null;
+
+  @IsNumber()
+  @IsOptional()
+  interval?: number;
 }

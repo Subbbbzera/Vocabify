@@ -85,12 +85,21 @@ export class WordService {
     return { message: 'Word deleted successfully', id };
   }
 
-  async addExample(id: number, example: string, userId: number) {
+  async addExample(id: number, example: any, userId: number) {
     const word = await this.verifyWordOwnership(id, userId);
     const examples = word.examples || [];
     examples.push(example);
     word.examples = examples;
     return this.wordRepo.save(word);
+  }
+
+  async updateExample(id: number, index: number, example: any, userId: number) {
+    const word = await this.verifyWordOwnership(id, userId);
+    if (word.examples && word.examples.length > index) {
+      word.examples[index] = example;
+      return this.wordRepo.save(word);
+    }
+    return word;
   }
 
   async deleteExample(id: number, index: number, userId: number) {

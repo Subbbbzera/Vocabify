@@ -8,6 +8,8 @@ export type AllWord = {
   translate: string
   extraForms?: string[]
   createdAt?: string
+  nextReviewDate?: string | null
+  interval?: number
 };
 
 export type WordToShow = [string, AllWord[]][]

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import {
   FaUser,
   FaEnvelope,
@@ -36,6 +36,7 @@ type Stats = {
 
 function Account() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [user, setUser] = useState<User | null>(() => getSessionUser())
   const [stats, setStats] = useState<Stats | null>(null)
 
@@ -44,6 +45,25 @@ function Account() {
   const [authData, setAuthData] = useState({ name: '', email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+
+  // Auto-open Auth modal when redirected from logout
+  useEffect(() => {
+    const state = location.state as { openRegister?: boolean, openLogin?: boolean } | null
+    if (!getSessionUser()) {
+      setUser(null)
+      if (state?.openRegister) {
+        setIsLogin(false)
+        setError('')
+        setShowAuthModal(true)
+        window.history.replaceState({}, '')
+      } else if (state?.openLogin) {
+        setIsLogin(true)
+        setError('')
+        setShowAuthModal(true)
+        window.history.replaceState({}, '')
+      }
+    }
+  }, [location.state])
 
   const [showResetModal, setShowResetModal] = useState(false)
   const [resetData, setResetData] = useState({ email: '', newPassword: '' })
@@ -756,7 +776,7 @@ function Account() {
               </p>
               <button
                 onClick={() => navigate('/practice')}
-                className='w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2'
+                className='w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2'
               >
                 <span>Go to Practice</span>
                 <FaArrowRight size={12} />

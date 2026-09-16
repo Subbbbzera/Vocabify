@@ -95,12 +95,24 @@ export class WordController {
   @Post([':id/examples', 'addExample/:id'])
   addExample(
     @Param('id', ParseIntPipe) id: number,
-    @Body('example') example: string,
+    @Body('example') example: any,
     @CurrentUser('id') userId: number,
     @Headers('user-id') headerId?: string,
   ) {
     const uid = userId || Number(headerId) || 1;
     return this.wordService.addExample(id, example, uid);
+  }
+
+  @Patch([':id/examples/:index', 'updateExample/:id/:index'])
+  updateExample(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('index', ParseIntPipe) index: number,
+    @Body('example') example: any,
+    @CurrentUser('id') userId: number,
+    @Headers('user-id') headerId?: string,
+  ) {
+    const uid = userId || Number(headerId) || 1;
+    return this.wordService.updateExample(id, index, example, uid);
   }
 
   @Delete([':id/examples/:index', 'deleteExample/:id/:index'])

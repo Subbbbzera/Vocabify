@@ -41,6 +41,12 @@ export class Word {
   @Column()
   dictionaryId: number;
 
+  @Column({ type: 'timestamp', nullable: true })
+  nextReviewDate: Date | null;
+
+  @Column({ type: 'int', default: 0 })
+  interval: number;
+
   @ManyToOne(() => Dictionary, (dict) => dict.words, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'dictionaryId' })
   dictionary: Dictionary;

@@ -20,16 +20,27 @@ import { DirectMessage } from './friend/entities/message.entity';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('DB_HOST', 'localhost'),
-        port: config.get<number>('DB_PORT', 5432),
-        username: config.get<string>('DB_USERNAME', 'postgres'),
-        password: config.get<string>('DB_PASSWORD', 'postgres'),
-        database: config.get<string>('DB_DATABASE', 'nestProject'),
-        entities: [Dictionary, Word, User, Friendship, DirectMessage],
-        synchronize: true,
-      }),
+      useFactory: (config: ConfigService) => {
+        const dbUrl = config.get<string>('DATABASE_URL');
+        const dbSsl = config.get<string>('DB_SSL');
+        const isSsl = dbSsl === 'true' || (dbSsl !== 'false' && (!!dbUrl && !dbUrl.includes('localhost') && !dbUrl.includes('127.0.0.1')));
+
+        return {
+          type: 'postgres' as const,
+          ...(dbUrl
+            ? { url: dbUrl }
+            : {
+                host: config.get<string>('DB_HOST', 'localhost'),
+                port: config.get<number>('DB_PORT', 5432),
+                username: config.get<string>('DB_USERNAME', 'postgres'),
+                password: config.get<string>('DB_PASSWORD', 'postgres'),
+                database: config.get<string>('DB_DATABASE', 'nestProject'),
+              }),
+          ssl: isSsl ? { rejectUnauthorized: false } : false,
+          entities: [Dictionary, Word, User, Friendship, DirectMessage],
+          synchronize: true,
+        };
+      },
     }),
     DictionaryModule,
     WordModule,
