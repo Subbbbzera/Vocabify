@@ -3,6 +3,7 @@ import { FaChevronDown, FaTrash, FaImage, FaEllipsisVertical, FaCopy, FaDownload
 
 interface ModalProp {
 
+
   name : string
   input1 : string
   input2? : string
@@ -15,6 +16,8 @@ interface ModalProp {
   onCreate : (data: {
     field1: string,
     field2: string,
+    transcription?: string,
+    partOfSpeech?: string,
     extraFields?: string[],
     remembered?: boolean,
     coverImage?: string,
@@ -35,6 +38,8 @@ interface ModalProp {
 
   defaultValue1?: string,
   defaultValue2?: string,
+  defaultTranscription?: string,
+  defaultPartOfSpeech?: string,
   defaultExtraFields?: string[],
   defaultRemembered?: boolean,
   showAddMore?: boolean,
@@ -58,11 +63,15 @@ interface ModalProp {
 function Modal({
   name, input1, input2, placeholder1, input2Type = "input", buttonText, onClose, onCreate, onDelete, onCopy,
   onExportFile,
-  defaultValue1, defaultValue2, defaultExtraFields, defaultRemembered, showAddMore,
+  defaultValue1, defaultValue2, defaultTranscription, defaultPartOfSpeech, defaultExtraFields, defaultRemembered, showAddMore,
   isDictionary, defaultSettings
 } : ModalProp) {
 
   const [fields, setFields] = useState({field1: defaultValue1 || "", field2: defaultValue2 || ""})
+  const [transcription, setTranscription] = useState(defaultTranscription || "")
+  const [partOfSpeech, setPartOfSpeech] = useState(defaultPartOfSpeech || "")
+  const [showTranscription, setShowTranscription] = useState(!!defaultTranscription)
+  const [showPartOfSpeech, setShowPartOfSpeech] = useState(!!defaultPartOfSpeech)
   const [extraFields, setExtraFields] = useState<string[]>(defaultExtraFields || [])
   const [remembered, setRemembered] = useState(defaultRemembered || false)
   const [validationError, setValidationError] = useState("")
@@ -106,43 +115,50 @@ function Modal({
     }
   }
 
-const Create = () =>{
-  setValidationError("");
-
-  if (!fields.field1.trim()) {
-    setValidationError(`Please fill in: ${input1}`);
-    return;
+  const Close = (e: React.MouseEvent) =>{
+    if(e.target === e.currentTarget){
+      onClose()
+    }
   }
 
-  if (input2Type !== "hidden" && !fields.field2.trim()) {
-    setValidationError(`Please fill in: ${input2}`);
-    return;
+  const Create = () =>{
+    setValidationError("");
+
+    if (!fields.field1.trim()) {
+      setValidationError(`Please fill in: ${input1}`);
+      return;
+    }
+
+    if (input2Type !== "hidden" && !fields.field2.trim()) {
+      setValidationError(`Please fill in: ${input2}`);
+      return;
+    }
+
+    const result = onCreate({
+      ...fields,
+      transcription: showTranscription ? transcription : undefined,
+      partOfSpeech: showPartOfSpeech ? partOfSpeech : undefined,
+      extraFields,
+      remembered,
+      coverImage,
+      showName,
+      showLanguage,
+      showFlag,
+      showProgress,
+      showImported,
+      isPinned,
+      isPublic,
+      tags: tagsInput.split(',').map(t => t.trim()).filter(t => t),
+      editOpacity,
+      pinOpacity
+    });
+
+    if (result === true) {
+      onClose();
+    } else if (typeof result === "string") {
+      setValidationError(result);
+    }
   }
-
-  const result = onCreate({
-    ...fields,
-    extraFields,
-    remembered,
-    coverImage,
-    showName,
-    showLanguage,
-    showFlag,
-    showProgress,
-    showImported,
-    isPinned,
-    isPublic,
-    tags: tagsInput.split(',').map(t => t.trim()).filter(t => t),
-    editOpacity,
-    pinOpacity
-  });
-
-  if (result === true) {
-    onClose();
-  } else if (typeof result === "string") {
-    setValidationError(result);
-  }
-
-}
 
 const handleSubmit = (e: React.FormEvent) => {
   e.preventDefault();
@@ -160,7 +176,7 @@ const Toggle = ({label, value, onChange}: {label: string, value: boolean, onChan
 
   return (
 
-    <form className='fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-2'  onClick={onClose} onSubmit={handleSubmit}>
+    <form className='fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-2'  onClick={Close} onSubmit={handleSubmit}>
 
       <div className='bg-slate-800 rounded-xl p-4 sm:p-6 md:p-8 w-[90%] max-w-[95%] sm:max-w-md shadow-2xl overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] max-h-[90vh]' onClick={e => e.stopPropagation()}>
 
@@ -277,8 +293,7 @@ const Toggle = ({label, value, onChange}: {label: string, value: boolean, onChan
               {placeholder1 === "textarea" ? (
                 <textarea
                   value={fields.field1} onChange={e => { setFields(prev => ({...prev, field1: e.target.value})); setValidationError(""); }}
-                  placeholder={`apple - яблуко
-go, went, gone - йти`} required
+                  placeholder={`apple - яблуко\ngo, went, gone - йти`} required
                   className='px-3 py-2 sm:px-4 sm:py-2 text-base bg-slate-700 rounded-lg w-full text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all min-h-[200px] resize-none'
                 />
               ) : (
@@ -326,6 +341,47 @@ go, went, gone - йти`} required
               )}
             </div>
           </div>
+
+          {!isDictionary && (
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input type="checkbox" checked={showTranscription} onChange={(e) => setShowTranscription(e.target.checked)} className="rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500" />
+                  Add Transcription
+                </label>
+                <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                  <input type="checkbox" checked={showPartOfSpeech} onChange={(e) => setShowPartOfSpeech(e.target.checked)} className="rounded bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500" />
+                  Add Part of Speech
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {showTranscription && (
+                  <div className='flex flex-col gap-1 sm:gap-2'>
+                    <label className='text-sm sm:text-xs font-semibold text-white/60 uppercase tracking-wider'>
+                      Transcription
+                    </label>
+                    <input
+                      type="text" value={transcription} onChange={e => setTranscription(e.target.value)}
+                      placeholder="/apple/"
+                      className='px-3 py-2 sm:px-3 sm:py-2 text-sm bg-slate-700/50 rounded-lg w-full text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all'
+                    />
+                  </div>
+                )}
+                {showPartOfSpeech && (
+                  <div className='flex flex-col gap-1 sm:gap-2'>
+                    <label className='text-sm sm:text-xs font-semibold text-white/60 uppercase tracking-wider'>
+                      Part of Speech
+                    </label>
+                    <input
+                      type="text" value={partOfSpeech} onChange={e => setPartOfSpeech(e.target.value)}
+                      placeholder="noun"
+                      className='px-3 py-2 sm:px-3 sm:py-2 text-sm bg-slate-700/50 rounded-lg w-full text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all'
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {input2Type !== "hidden" && (
             <div className='flex flex-col gap-1 sm:gap-2'>

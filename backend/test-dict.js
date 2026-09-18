@@ -1,0 +1,1 @@
+fetch('https://dictionary.cambridge.org/dictionary/english/hello', {headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}}).then(r=>r.text()).then(t => { console.log(t.substring(0,200)); const m = t.match(/<span class="ipa dipa lpr-2 lpl-1">([^<]+)<\\/span>/i); console.log(m ? m[1] : 'not found'); }).catch(console.error)

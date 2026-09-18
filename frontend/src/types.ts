@@ -6,6 +6,8 @@ export type AllWord = {
   remembered: boolean
   text: string
   translate: string
+  transcription?: string
+  partOfSpeech?: string
   extraForms?: string[]
   createdAt?: string
   nextReviewDate?: string | null

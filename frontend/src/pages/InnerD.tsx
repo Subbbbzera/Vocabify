@@ -292,11 +292,13 @@ function InnerD() {
     setEditModal(true);
   }, []);
 
-  const CreateWord = (object : {field1: string, field2: string, extraFields?: string[], remembered?: boolean}) : boolean | string =>{
+  const CreateWord = (object : {field1: string, field2: string, transcription?: string, partOfSpeech?: string, extraFields?: string[], remembered?: boolean}) : boolean | string =>{
     const numId = Number(id)
     const userId = getUserId();
     const wordToSave = {
       text: object.field1.trim(), translate: object.field2.trim(),
+      transcription: object.transcription,
+      partOfSpeech: object.partOfSpeech,
       extraForms: object.extraFields?.filter(f => f.trim() !== ""),
       dictionaryId: numId,
       remembered: object.remembered || false
@@ -331,7 +333,7 @@ function InnerD() {
     return true
   }
 
-  const ConfirmEdit = (object: {field1: string, field2: string, extraFields?: string[], remembered?: boolean}) : boolean | string => {
+  const ConfirmEdit = (object: {field1: string, field2: string, transcription?: string, partOfSpeech?: string, extraFields?: string[], remembered?: boolean}) : boolean | string => {
     if (!editingWord) return false;
     const wordToSave = {
       text: object.field1.trim(),
@@ -356,13 +358,16 @@ function InnerD() {
     const userId = getUserId();
     fetch(getBackendUrl(`/word/update/${editingWord.id}`), {
       method: "PATCH",
-      headers: {
+      headers: { 
         "Content-Type": "application/json",
-        "user-id": userId?.toString() || ""
+        "user-id": userId?.toString() || "" 
       },
       body: JSON.stringify({
-        text: object.field1, translate: object.field2,
-        extraForms: object.extraFields?.filter(f => f.trim() !== "") || [],
+        text: object.field1.trim(),
+        translate: object.field2.trim(),
+        transcription: object.transcription,
+        partOfSpeech: object.partOfSpeech,
+        extraForms: object.extraFields?.filter(f => f.trim() !== ""),
         dictionaryId: editingWord.dictionaryId,
         remembered: object.remembered ?? editingWord.remembered
       })
@@ -713,7 +718,7 @@ function InnerD() {
      )}
       {modal ? <Modal name="Create New word" input1='Original' input2='Translation' input2Type="input" placeholder1="e.g. banana" buttonText="Add" onClose={() => setModal(false)} onCreate={CreateWord} showAddMore={true}/> : null}
       {editModal && editingWord ? (
-        <Modal name="Edit word" input1='Original' input2='Translation' input2Type="input" placeholder1={editingWord.text} buttonText="Save" onClose={() => { setEditModal(false); setEditingWord(null); }} onCreate={ConfirmEdit} onDelete={() => handleDelete(editingWord.id)} defaultValue1={editingWord.text} defaultValue2={editingWord.translate} defaultExtraFields={editingWord.extraForms} defaultRemembered={editingWord.remembered} showAddMore={true}/>
+        <Modal name="Edit word" input1='Original' input2='Translation' input2Type="input" placeholder1={editingWord.text} buttonText="Save" onClose={() => { setEditModal(false); setEditingWord(null); }} onCreate={ConfirmEdit} onDelete={() => handleDelete(editingWord.id)} defaultValue1={editingWord.text} defaultValue2={editingWord.translate} defaultTranscription={editingWord.transcription} defaultPartOfSpeech={editingWord.partOfSpeech} defaultExtraFields={editingWord.extraForms} defaultRemembered={editingWord.remembered} showAddMore={true}/>
       ) : null}
       </div>
   )

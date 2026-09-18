@@ -7,6 +7,14 @@ export class CreateWordDto {
   @IsString()
   translate: string;
 
+  @IsString()
+  @IsOptional()
+  transcription?: string;
+
+  @IsString()
+  @IsOptional()
+  partOfSpeech?: string;
+
   @IsNumber()
   dictionaryId: number;
 
@@ -46,6 +54,14 @@ export class UpdateWordDto {
   @IsString()
   @IsOptional()
   translate?: string;
+
+  @IsString()
+  @IsOptional()
+  transcription?: string;
+
+  @IsString()
+  @IsOptional()
+  partOfSpeech?: string;
 
   @IsString({ each: true })
   @IsOptional()

@@ -19,6 +19,12 @@ export class Word {
   @Column({ length: 100 })
   translate: string;
 
+  @Column({ length: 100, nullable: true })
+  transcription: string;
+
+  @Column({ length: 50, nullable: true })
+  partOfSpeech: string;
+
   @Column({ default: false })
   isFavorite: boolean;
 
@@ -51,3 +57,4 @@ export class Word {
   @JoinColumn({ name: 'dictionaryId' })
   dictionary: Dictionary;
 }
+
