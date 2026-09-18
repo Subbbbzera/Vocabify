@@ -1002,16 +1002,41 @@ function Practice() {
             </form>
           </div>
         ) : (
-          <div className="w-full relative">
+          <div className="w-full relative z-0">
             {/* Stack Effect */}
-            {words.length > 1 && (
-              <div className="absolute w-full h-[420px] top-2 left-0 scale-[0.98] rotate-[2deg] opacity-70 bg-slate-800 border border-slate-700/50 rounded-2xl -z-10 pointer-events-none shadow-md"></div>
+            {words.length > 5 && (
+              <>
+                <div className="absolute w-full h-[420px] top-0 left-0 -rotate-6 opacity-30 bg-slate-800 border border-slate-700/80 rounded-2xl -z-20 pointer-events-none shadow-sm origin-center transition-all duration-300 flex flex-col items-center justify-center p-8 overflow-hidden">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-slate-400 text-center leading-tight blur-md select-none">
+                    {direction === 'origToTrans' ? words[(currentIndex + 3) % words.length]?.text : words[(currentIndex + 3) % words.length]?.translate}
+                  </h2>
+                </div>
+                <div className="absolute w-full h-[420px] top-0 left-0 rotate-6 opacity-30 bg-slate-800 border border-slate-700/80 rounded-2xl -z-20 pointer-events-none shadow-sm origin-center transition-all duration-300 flex flex-col items-center justify-center p-8 overflow-hidden">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-slate-400 text-center leading-tight blur-md select-none">
+                    {direction === 'origToTrans' ? words[(currentIndex + 4) % words.length]?.text : words[(currentIndex + 4) % words.length]?.translate}
+                  </h2>
+                </div>
+              </>
             )}
-            {words.length > 2 && (
-              <div className="absolute w-full h-[420px] top-4 left-0 scale-[0.95] -rotate-[3deg] opacity-50 bg-slate-800 border border-slate-700/30 rounded-2xl -z-20 pointer-events-none shadow-sm"></div>
-            )}
-            {words.length > 3 && (
-              <div className="absolute w-full h-[420px] top-6 left-0 scale-[0.92] rotate-[4deg] opacity-30 bg-slate-800 border border-slate-700/30 rounded-2xl -z-30 pointer-events-none"></div>
+            {words.length >= 3 && (
+              <>
+                <div className="absolute w-full h-[420px] top-0 left-0 -rotate-3 opacity-70 bg-slate-800 border border-slate-700 rounded-2xl -z-10 pointer-events-none shadow-md origin-center transition-all duration-300 flex flex-col items-center justify-center p-8 overflow-hidden">
+                  <span className="absolute top-6 text-[10px] font-semibold text-slate-500 uppercase tracking-widest blur-sm select-none">
+                    {direction === 'origToTrans' ? 'Question' : 'Translation'}
+                  </span>
+                  <h2 className="text-3xl sm:text-4xl font-bold text-slate-300 text-center leading-tight blur-sm select-none">
+                    {direction === 'origToTrans' ? words[(currentIndex + 1) % words.length]?.text : words[(currentIndex + 1) % words.length]?.translate}
+                  </h2>
+                </div>
+                <div className="absolute w-full h-[420px] top-0 left-0 rotate-3 opacity-70 bg-slate-800 border border-slate-700 rounded-2xl -z-10 pointer-events-none shadow-md origin-center transition-all duration-300 flex flex-col items-center justify-center p-8 overflow-hidden">
+                  <span className="absolute top-6 text-[10px] font-semibold text-slate-500 uppercase tracking-widest blur-sm select-none">
+                    {direction === 'origToTrans' ? 'Question' : 'Translation'}
+                  </span>
+                  <h2 className="text-3xl sm:text-4xl font-bold text-slate-300 text-center leading-tight blur-sm select-none">
+                    {direction === 'origToTrans' ? words[(currentIndex + 2) % words.length]?.text : words[(currentIndex + 2) % words.length]?.translate}
+                  </h2>
+                </div>
+              </>
             )}
             
             <div

@@ -22,7 +22,7 @@ function shuffleArray<T>(array: T[]): T[] {
 
 export default function MatchingMode({ words, onCorrect, onWrong, onFinish }: MatchingModeProps) {
   const [batchIndex, setBatchIndex] = useState(0);
-  const BATCH_SIZE = 6;
+  const BATCH_SIZE = 4;
 
   const currentBatchWords = useMemo(() => {
     return words.slice(batchIndex * BATCH_SIZE, (batchIndex + 1) * BATCH_SIZE);
