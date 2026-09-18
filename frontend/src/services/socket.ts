@@ -50,11 +50,11 @@ export function initSocket(customUserId?: number, customToken?: string): Socket 
     console.log('[WebSocket Client] Connected to real-time gateway with ID:', socket?.id);
   });
 
-  socket.on('disconnect', (reason) => {
-    console.log('[WebSocket Client] Disconnected:', reason);
+  socket.on('disconnect', (reason: any) => {
+    console.log('[Socket] Disconnected:', reason);
   });
 
-  socket.on('connect_error', (err) => {
+  socket.on('connect_error', (err: any) => {
     console.warn('[WebSocket Client] Connection error:', err.message);
   });
 

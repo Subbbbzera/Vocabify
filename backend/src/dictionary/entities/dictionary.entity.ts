@@ -46,6 +46,27 @@ export class Dictionary {
   @Column({ type: 'float', default: 1.0 })
   pinOpacity: number;
 
+  @Column({ default: false })
+  isPublic: boolean;
+
+  @Column({ type: 'simple-array', nullable: true })
+  tags: string[];
+
+  @Column({ default: 0 })
+  views: number;
+
+  @Column({ type: 'simple-array', nullable: true })
+  viewers: number[];
+
+  @Column({ type: 'float', default: 0 })
+  averageRating: number;
+
+  @Column({ default: 0 })
+  totalRatings: number;
+
+  @Column({ type: 'simple-json', nullable: true })
+  ratingsMap: Record<number, number>;
+
   @ManyToOne(() => User, (user) => user.dictionaries, { onDelete: 'CASCADE' })
   user: User;
 

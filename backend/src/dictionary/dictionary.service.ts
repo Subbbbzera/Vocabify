@@ -70,10 +70,11 @@ export class DictionaryService {
 
   async getDictionaryById(id: number, userId: number) {
     const dictionary = await this.dictionaryRepo.findOne({
-      where: {
-        dictionaryId: id,
-        user: { id: userId },
-      },
+      where: [
+        { dictionaryId: id, user: { id: userId } },
+        { dictionaryId: id, isPublic: true }
+      ],
+      relations: ['user']
     });
 
     if (!dictionary) {
@@ -148,18 +149,25 @@ export class DictionaryService {
 
   async copyDictionary(id: number, userId: number) {
     const original = await this.dictionaryRepo.findOne({
-      where: { dictionaryId: id, user: { id: userId } },
+      where: { dictionaryId: id },
+      relations: ['user']
     });
 
     if (!original) {
       throw new NotFoundException(`Dictionary with ID ${id} not found`);
     }
 
-    const { dictionaryId: _, ...copyData } = original;
+    const { dictionaryId: _, user: __, isPublic: ___, views: ____, viewers: _v, averageRating: _____, totalRatings: ______, ratingsMap: _______, ...copyData } = original;
     const newDict = this.dictionaryRepo.create({
       ...copyData,
       dictionaryName: `${original.dictionaryName} - copy`,
       user: { id: userId },
+      isPublic: false,
+      views: 0,
+      viewers: [],
+      averageRating: 0,
+      totalRatings: 0,
+      ratingsMap: {}
     });
     const savedDict = await this.dictionaryRepo.save(newDict);
 
@@ -239,5 +247,98 @@ export class DictionaryService {
 
   async InnerD(id: any) {
     return this.getDictionaryById(Number(id), 1);
+  }
+
+  async getSuggestedDictionaries(userId: number) {
+    // Get all public dictionaries not belonging to this user
+    const publicDicts = await this.dictionaryRepo.find({
+      where: { isPublic: true },
+      relations: ['user']
+    });
+    
+    const othersDicts = publicDicts.filter(d => d.user && d.user.id !== userId);
+    
+    // Get current user's dictionaries to find their preferred tags
+    const userDicts = await this.dictionaryRepo.find({
+      where: { user: { id: userId } }
+    });
+    
+    const userTags = new Set<string>();
+    userDicts.forEach(d => {
+      if (d.tags && Array.isArray(d.tags)) {
+        d.tags.forEach(t => userTags.add(t.toLowerCase().trim()));
+      }
+    });
+
+    const withScores = othersDicts.map(d => {
+      let score = 0;
+      if (d.tags && Array.isArray(d.tags)) {
+        d.tags.forEach(t => {
+          if (userTags.has(t.toLowerCase().trim())) score++;
+        });
+      }
+      return { ...d, matchScore: score };
+    });
+
+    // Sort by match score descending
+    withScores.sort((a, b) => b.matchScore - a.matchScore);
+
+    // Map counts
+    const dictIds = withScores.map(d => d.dictionaryId);
+    if (dictIds.length === 0) return [];
+
+    const counts = await this.wordRepo
+      .createQueryBuilder('word')
+      .where('word.dictionaryId IN (:...ids)', { ids: dictIds })
+      .select('word.dictionaryId', 'id')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('word.dictionaryId')
+      .getRawMany();
+
+    const countMap = Object.fromEntries(
+      counts.map((c) => [Number(c.id), Number(c.count)]),
+    );
+
+    // Only return dictionaries that have words in them
+    return withScores
+      .filter(d => (countMap[d.dictionaryId] || 0) > 0)
+      .map(d => {
+        const { user, matchScore, ...rest } = d;
+        return {
+          ...rest,
+          amountWord: countMap[d.dictionaryId] || 0,
+          authorName: user?.name || 'Unknown',
+        };
+      });
+  }
+
+  async incrementViews(id: number, userId: number) {
+    const dictionary = await this.dictionaryRepo.findOne({ where: { dictionaryId: id } });
+    if (dictionary) {
+      if (!dictionary.viewers) dictionary.viewers = [];
+      if (!dictionary.viewers.map(String).includes(String(userId))) {
+        dictionary.viewers.push(userId);
+        dictionary.views = dictionary.viewers.length;
+        await this.dictionaryRepo.save(dictionary);
+      }
+    }
+  }
+
+  async rateDictionary(id: number, stars: number, userId: number) {
+    const dictionary = await this.dictionaryRepo.findOne({ where: { dictionaryId: id } });
+    if (!dictionary) throw new NotFoundException('Dictionary not found');
+
+    if (!dictionary.ratingsMap) dictionary.ratingsMap = {};
+    
+    const existingRating = dictionary.ratingsMap[userId];
+    dictionary.ratingsMap[userId] = stars;
+
+    const ratings = Object.values(dictionary.ratingsMap);
+    dictionary.totalRatings = ratings.length;
+    const sum = ratings.reduce((acc, curr) => acc + curr, 0);
+    dictionary.averageRating = sum / dictionary.totalRatings;
+
+    await this.dictionaryRepo.save(dictionary);
+    return dictionary;
   }
 }

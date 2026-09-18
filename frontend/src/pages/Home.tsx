@@ -157,10 +157,40 @@ function Home() {
             </div>
           </div>
         </div>
+        
+        <div className='w-full bg-slate-800 p-4 sm:p-8 rounded-xl border border-slate-700 space-y-4 sm:space-y-6 mb-4 sm:mb-8 text-left'>
+          <div className='border-b border-slate-700 pb-2 mb-4'>
+            <h2 className='text-lg sm:text-2xl font-bold uppercase tracking-wider text-white'>
+              Advanced Capabilities
+            </h2>
+            <p className='text-slate-400 text-xs sm:text-sm mt-1'>Everything built-in to maximize your learning efficiency.</p>
+          </div>
+
+          <div className='grid grid-cols-1 sm:grid-cols-3 gap-6'>
+            <div className='space-y-2'>
+              <h4 className='text-sm font-bold text-blue-400 uppercase tracking-wider'>Spaced Repetition (SRS)</h4>
+              <p className='text-xs sm:text-sm text-slate-300 leading-relaxed'>
+                Don't waste time reviewing words you already know. Our built-in algorithm schedules reviews exactly when you're about to forget them (e.g., in 3 days, a week, or a month), adapting to your memory.
+              </p>
+            </div>
+            <div className='space-y-2'>
+              <h4 className='text-sm font-bold text-blue-400 uppercase tracking-wider'>Visual & Audio Context</h4>
+              <p className='text-xs sm:text-sm text-slate-300 leading-relaxed'>
+                Add multiple images to your examples using the built-in image carousel to build strong visual associations. Click to hear the correct pronunciation of any word in various accents.
+              </p>
+            </div>
+            <div className='space-y-2'>
+              <h4 className='text-sm font-bold text-blue-400 uppercase tracking-wider'>Real-time Social Learning</h4>
+              <p className='text-xs sm:text-sm text-slate-300 leading-relaxed'>
+                Learning is better together. Add friends, compare your progress, and use the built-in real-time chat to share tips, practice words together, or just stay motivated.
+              </p>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
-  )
+  );
 }
 
-export default Home
+export default Home;

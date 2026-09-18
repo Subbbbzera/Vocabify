@@ -11,7 +11,6 @@ import Notifications from './pages/Notifications'
 import Friends from './pages/Friends'
 import ProtectedRoute from './components/ProtectedRoute'
 
-
 function App() {
  
   

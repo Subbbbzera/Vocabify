@@ -1,4 +1,4 @@
-import { FaEdit } from 'react-icons/fa';
+import { FaEdit, FaStar, FaEye } from 'react-icons/fa';
 import { FaThumbtack } from 'react-icons/fa6';
 
 export type DictionaryProps = {
@@ -17,12 +17,19 @@ export type DictionaryProps = {
   showImported?: boolean;
   isImported?: boolean;
   isPinned?: boolean;
+  isPublic?: boolean;
+  tags?: string[];
+  views?: number;
+  averageRating?: number;
+  totalRatings?: number;
+  isSuggested?: boolean;
   editOpacity?: number;
   pinOpacity?: number;
 
   onClick: () => void
-  onRename: (e: React.MouseEvent) => void
+  onRename?: (e: React.MouseEvent) => void
   onPinToggle?: (e: React.MouseEvent) => void
+  onRate?: (stars: number, e: React.MouseEvent) => void
 }
 
 function Dictionaty(props: DictionaryProps) {
@@ -48,33 +55,37 @@ function Dictionaty(props: DictionaryProps) {
       </div>
     )}
 
-    <button
-      className={`absolute top-3 left-3 z-20 p-1.5 rounded-lg border transition-all duration-200 ${
-        props.isPinned
-          ? 'bg-amber-400/20 border-amber-400/50 text-amber-400 hover:bg-amber-400/30'
-          : 'bg-transparent border-slate-500/50 text-slate-400 hover:border-slate-300 hover:text-white'
-      }`}
-      style={{ opacity: props.pinOpacity ?? 1 }}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (props.onPinToggle) {
-          props.onPinToggle(e);
-        }
-      }}
-    >
-      <FaThumbtack size={12} className={props.isPinned ? 'rotate-45' : ''} />
-    </button>
+    {props.onPinToggle && (
+      <button
+        className={`absolute top-3 left-3 z-20 p-1.5 rounded-lg border transition-all duration-200 ${
+          props.isPinned
+            ? 'bg-amber-400/20 border-amber-400/50 text-amber-400 hover:bg-amber-400/30'
+            : 'bg-transparent border-slate-500/50 text-slate-400 hover:border-slate-300 hover:text-white'
+        }`}
+        style={{ opacity: props.pinOpacity ?? 1 }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (props.onPinToggle) props.onPinToggle(e);
+        }}
+      >
+        <FaThumbtack size={12} className={props.isPinned ? 'rotate-45' : ''} />
+      </button>
+    )}
 
-    <button
-      className='absolute top-3 right-3 text-white drop-shadow-lg hover:text-blue-400 transition-colors z-20'
-      style={{ opacity: props.editOpacity ?? 1 }}
-      onClick={(e) => {
-        e.stopPropagation();
-        props.onRename(e);
-      }}
-    >
-      <FaEdit size={18} />
-    </button>
+    {props.onRename && (
+      <button
+        className='absolute top-3 right-3 text-white drop-shadow-lg hover:text-blue-400 transition-colors z-20'
+        style={{ opacity: props.editOpacity ?? 1 }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (props.onRename) props.onRename(e);
+        }}
+      >
+        <FaEdit size={18} />
+      </button>
+    )}
+
+
 
     <div className='relative z-10 flex flex-col items-center w-full h-full justify-center p-2'>
 
@@ -97,7 +108,22 @@ function Dictionaty(props: DictionaryProps) {
           </h2>
         )}
 
-        {showProgress && (
+        {props.isSuggested ? (
+          <div className='flex flex-col items-center'>
+            <p className={`text-[0.8rem] md:text-sm font-medium transition-colors ${props.coverImage ? 'text-slate-100 drop-shadow-md' : 'text-slate-400'}`}>Words: {props.amountWord}</p>
+            <div className='flex gap-3 mt-1 items-center'>
+              <span 
+                className={`flex items-center gap-1 text-[0.7rem] md:text-xs font-bold transition-transform ${props.coverImage ? 'text-white' : 'text-amber-400'}`}
+                title="Rating"
+              >
+                <FaStar /> {props.averageRating ? props.averageRating.toFixed(1) : 'New'}
+              </span>
+              <span className={`flex items-center gap-1 text-[0.7rem] md:text-xs font-bold ${props.coverImage ? 'text-white' : 'text-slate-400'}`}>
+                <FaEye /> {props.views || 0}
+              </span>
+            </div>
+          </div>
+        ) : showProgress && (
           <div className='flex flex-col items-center'>
             <p className={`text-[0.8rem] md:text-sm font-medium transition-colors ${props.coverImage ? 'text-slate-100 drop-shadow-md' : 'text-slate-400'}`}>Words: {props.amountWord}</p>
             <p className={`text-[0.7rem] md:text-xs font-black transition-colors ${props.coverImage ? 'text-white drop-shadow-md' : ''} ${progress === 100 ? 'text-emerald-400' : props.coverImage ? 'text-slate-100' : 'text-slate-400'}`}>
@@ -117,6 +143,26 @@ function Dictionaty(props: DictionaryProps) {
         </p>
       )}
 
+      {props.tags && props.tags.length > 0 && (
+        <div className="absolute bottom-2 left-0 right-0 flex flex-wrap justify-center gap-1 px-2 z-20">
+          {props.tags.slice(0, 3).map((tag, i) => (
+            <span key={i} className="text-[8px] sm:text-[9px] bg-blue-500/80 text-white px-1.5 py-0.5 rounded-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[60px]">
+              #{tag}
+            </span>
+          ))}
+          {props.tags.length > 3 && (
+            <span className="text-[8px] sm:text-[9px] bg-slate-600/80 text-white px-1 py-0.5 rounded-sm">
+              +{props.tags.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+
+      {props.isPublic && (
+        <div className="absolute bottom-2 right-2 text-[10px] text-emerald-400 font-bold tracking-wider z-20 bg-slate-900/60 px-1 rounded" title="Public Dictionary">
+          PUB
+        </div>
+      )}
     </div>
 
   </div>

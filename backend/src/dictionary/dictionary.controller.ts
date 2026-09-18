@@ -29,6 +29,15 @@ export class DictionaryController {
     return this.dictionaryService.getDictionaries(uid);
   }
 
+  @Get('suggested')
+  getSuggestedDictionaries(
+    @CurrentUser('id') userId: number,
+    @Headers('user-id') headerId?: string,
+  ) {
+    const uid = userId || Number(headerId) || 1;
+    return this.dictionaryService.getSuggestedDictionaries(uid);
+  }
+
   @Get('stats')
   getStats(
     @CurrentUser('id') userId: number,
@@ -138,5 +147,26 @@ export class DictionaryController {
   ) {
     const uid = userId || Number(headerId) || 1;
     return this.dictionaryService.getWordsGrouped(id, uid);
+  }
+
+  @Post(':id/view')
+  incrementViews(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser('id') userId: number,
+    @Headers('user-id') headerId?: string,
+  ) {
+    const uid = userId || Number(headerId) || 1;
+    return this.dictionaryService.incrementViews(id, uid);
+  }
+
+  @Post(':id/rate')
+  rateDictionary(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { stars: number },
+    @CurrentUser('id') userId: number,
+    @Headers('user-id') headerId?: string,
+  ) {
+    const uid = userId || Number(headerId) || 1;
+    return this.dictionaryService.rateDictionary(id, body.stars, uid);
   }
 }

@@ -23,6 +23,8 @@ export type DictionarySettings = {
   showImported: boolean;
   isImported: boolean;
   isPinned?: boolean;
+  isPublic?: boolean;
+  tags?: string[];
   editOpacity?: number;
   pinOpacity?: number;
 }
@@ -33,6 +35,9 @@ export type MainDictionaries = {
   language: string;
   amountWord: number;
   rememberedWords: number;
+  views?: number;
+  averageRating?: number;
+  totalRatings?: number;
 } & DictionarySettings;
 
 export type User = {

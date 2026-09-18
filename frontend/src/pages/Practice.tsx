@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaXmark, FaVolumeHigh, FaRotateLeft } from 'react-icons/fa6';
 import type { AllWord } from '../types';
+import MatchingMode from '../components/MatchingMode';
 
 type FilterType = 'due' | 'unlearned' | 'all' | 'learned' | 'custom';
 
@@ -11,12 +12,12 @@ function Practice() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [practiceMode, setPracticeModeState] = useState<'cards' | 'writing'>(() => {
+  const [practiceMode, setPracticeModeState] = useState<'cards' | 'writing' | 'matching'>(() => {
     const m = searchParams.get('mode');
-    return m === 'cards' || m === 'writing' ? m : 'cards';
+    return m === 'cards' || m === 'writing' || m === 'matching' ? m : 'cards';
   });
 
-  const setPracticeMode = (mode: 'writing' | 'cards') => {
+  const setPracticeMode = (mode: 'writing' | 'cards' | 'matching') => {
     setPracticeModeState(mode);
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
@@ -30,6 +31,7 @@ function Practice() {
 
   const [allFetchedWords, setAllFetchedWords] = useState<AllWord[]>([]);
   const [words, setWords] = useState<AllWord[]>([]);
+  const [sessionTotalWords, setSessionTotalWords] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [inputValue, setInputValue] = useState('');
   const [direction, setDirection] = useState<'origToTrans' | 'transToOrig'>('origToTrans');
@@ -277,6 +279,7 @@ function Practice() {
     }
 
     setWords([...filtered].sort(() => Math.random() - 0.5));
+    setSessionTotalWords(filtered.length);
     setIsSetupOpen(false);
     setCurrentIndex(0);
 
@@ -487,11 +490,11 @@ function Practice() {
                 1. Mode
               </span>
               <span className="text-[11px] font-medium text-blue-400">
-                {practiceMode === 'cards' ? 'Flashcards' : 'Writing'}
+                {practiceMode === 'cards' ? 'Flashcards' : practiceMode === 'writing' ? 'Writing' : 'Matching'}
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setPracticeMode('cards')}
@@ -514,6 +517,18 @@ function Practice() {
                 }`}
               >
                 Writing
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setPracticeMode('matching')}
+                className={`py-2 px-3 rounded-lg border text-center transition-colors cursor-pointer select-none text-xs sm:text-sm font-semibold ${
+                  practiceMode === 'matching'
+                    ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                Matching
               </button>
             </div>
           </div>
@@ -864,18 +879,51 @@ function Practice() {
           >
             Writing
           </button>
+          <button
+            onClick={() => setPracticeMode('matching')}
+            className={`px-3 py-1 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
+              practiceMode === 'matching' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Matching
+          </button>
         </div>
 
         <div className="w-9"></div>
       </div>
 
-      <div className="flex flex-col items-center mb-5">
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Words Left</span>
-        <span className="text-2xl sm:text-3xl font-bold text-white">{words.length}</span>
-      </div>
+      {practiceMode !== 'matching' && (
+        <div className="flex flex-col items-center w-full max-w-sm mx-auto mb-4 sm:mb-8 z-10">
+          <div className="flex justify-between w-full mb-1.5 px-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Session Progress</span>
+            <span className="text-[10px] font-bold text-slate-400">{sessionTotalWords - words.length} / {sessionTotalWords}</span>
+          </div>
+          <div className="w-full h-2 bg-slate-800/80 rounded-full overflow-hidden border border-slate-700/50 shadow-inner">
+            <div 
+              className="h-full bg-blue-500 transition-all duration-500 ease-out"
+              style={{ width: `${Math.round(((sessionTotalWords - words.length) / (sessionTotalWords || 1)) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
 
-      <div className="flex-1 flex flex-col items-center justify-center max-w-lg mx-auto w-full relative">
-        {practiceMode === 'writing' ? (
+      <div className={`flex-1 flex flex-col items-center justify-start pt-2 sm:pt-4 mx-auto w-full relative ${practiceMode === 'matching' ? 'max-w-5xl' : 'max-w-lg'}`}>
+        {practiceMode === 'matching' ? (
+          <MatchingMode 
+            words={words} 
+            onCorrect={(id) => {
+              const word = words.find(w => w.id === id);
+              if (word) markAsLearned(word);
+            }} 
+            onWrong={(id) => {
+              const word = words.find(w => w.id === id);
+              if (word) markAsForgotten(word);
+            }} 
+            onFinish={() => {
+              setIsSetupOpen(true);
+            }} 
+          />
+        ) : practiceMode === 'writing' ? (
           <div className={`w-full bg-slate-800/60 border p-6 sm:p-10 rounded-2xl shadow-xl backdrop-blur-sm text-center relative overflow-hidden transition-all duration-300 ${isCorrect === true ? 'border-emerald-500' : isCorrect === false ? 'border-rose-500' : 'border-slate-700'}`}>
             <div className={`absolute inset-0 transition-opacity duration-500 ${isCorrect === true ? 'bg-emerald-500/10 opacity-100' : isCorrect === false ? 'bg-rose-500/10 opacity-100' : 'opacity-0'}`}></div>
 
@@ -954,9 +1002,20 @@ function Practice() {
             </form>
           </div>
         ) : (
-          <div className="w-full flex flex-col items-center">
+          <div className="w-full relative">
+            {/* Stack Effect */}
+            {words.length > 1 && (
+              <div className="absolute w-full h-[420px] top-2 left-0 scale-[0.98] rotate-[2deg] opacity-70 bg-slate-800 border border-slate-700/50 rounded-2xl -z-10 pointer-events-none shadow-md"></div>
+            )}
+            {words.length > 2 && (
+              <div className="absolute w-full h-[420px] top-4 left-0 scale-[0.95] -rotate-[3deg] opacity-50 bg-slate-800 border border-slate-700/30 rounded-2xl -z-20 pointer-events-none shadow-sm"></div>
+            )}
+            {words.length > 3 && (
+              <div className="absolute w-full h-[420px] top-6 left-0 scale-[0.92] rotate-[4deg] opacity-30 bg-slate-800 border border-slate-700/30 rounded-2xl -z-30 pointer-events-none"></div>
+            )}
+            
             <div
-              className="w-full h-[420px] perspective-1000 cursor-grab active:cursor-grabbing"
+              className="w-full h-[420px] perspective-1000 cursor-grab active:cursor-grabbing relative z-10"
               onMouseDown={onDragStart}
               onMouseMove={onDragMove}
               onMouseUp={onDragEnd}
@@ -1034,10 +1093,12 @@ function Practice() {
           </div>
         )}
 
-        <div className="mt-4 h-8 flex items-center justify-center">
-          {isCorrect === true && <div className="flex items-center gap-2 text-emerald-400 font-bold tracking-wider text-xs animate-bounce"><FaCheck size={12}/> CORRECT!</div>}
-          {isCorrect === false && <div className="flex items-center gap-2 text-rose-400 font-bold tracking-wider text-xs animate-pulse"><FaXmark size={12}/> REPEAT LATER!</div>}
-        </div>
+        {practiceMode !== 'matching' && (
+          <div className="mt-4 h-8 flex items-center justify-center">
+            {isCorrect === true && <div className="flex items-center gap-2 text-emerald-400 font-bold tracking-wider text-xs animate-bounce"><FaCheck size={12}/> CORRECT!</div>}
+            {isCorrect === false && <div className="flex items-center gap-2 text-rose-400 font-bold tracking-wider text-xs animate-pulse"><FaXmark size={12}/> REPEAT LATER!</div>}
+          </div>
+        )}
       </div>
 
       <style>{`

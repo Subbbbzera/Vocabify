@@ -1,11 +1,11 @@
 import { getBackendUrl } from '../services/api'
 import { useEffect, useRef, useState, useMemo, useCallback, useDeferredValue } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useLocation } from "react-router-dom"
 import Modal from "../components/Modal"
 import Word from "../components/forDictionaries/Word"
 import Input from "../components/Input"
-import { FaPlus, FaBars, FaShuffle, FaLayerGroup, FaChevronDown, FaGraduationCap, FaArrowUp } from "react-icons/fa6"
-import { FaSearch } from "react-icons/fa"
+import { FaPlus, FaBars, FaShuffle, FaLayerGroup, FaChevronDown, FaGraduationCap, FaArrowUp, FaCopy, FaCheck } from "react-icons/fa6"
+import { FaSearch, FaStar } from "react-icons/fa"
 import type { AllWord, WordToShow } from "../types"
 
 type FlatItem =
@@ -14,11 +14,18 @@ type FlatItem =
 
 function InnerD() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const isReadOnly = location.state?.readOnly || false
+  const dictionaryObj = location.state?.dictionary || null
+
   const [modal, setModal] = useState(false)
   const [editModal, setEditModal] = useState(false)
   const [editingWord, setEditingWord] = useState<AllWord | null>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isListSettingsOpen, setIsListSettingsOpen] = useState(false)
+  const [isRatingMode, setIsRatingMode] = useState(false)
+  const [ratingValue, setRatingValue] = useState(0)
+  const [hoverRating, setHoverRating] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const getUserId = () => {
@@ -58,6 +65,44 @@ function InnerD() {
       console.error('Error resetting words:', error);
       alert("Failed to reset words.");
     }
+  };
+
+  const submitRating = () => {
+    if (!id || ratingValue < 1 || ratingValue > 5) return;
+    
+    const userId = getUserId();
+    fetch(getBackendUrl(`/dictionary/${id}/rate`), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "user-id": userId?.toString() || ""
+      },
+      body: JSON.stringify({ stars: ratingValue })
+    })
+    .then(res => res.json())
+    .then(() => {
+      alert("Rating submitted successfully!");
+      setIsRatingMode(false);
+      setIsMenuOpen(false);
+    });
+  };
+
+  const handleCopyDictionary = () => {
+    if (!id) return;
+    const userId = getUserId();
+    fetch(getBackendUrl(`/dictionary/copy`), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "user-id": userId?.toString() || ""
+      },
+      body: JSON.stringify({ id: Number(id) })
+    })
+    .then(res => res.json())
+    .then(() => {
+      alert("Dictionary copied successfully!");
+      navigate('/mainDictionary');
+    })
   };
 
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
@@ -416,11 +461,25 @@ function InnerD() {
       </div>
     )}
 
+    {dictionaryObj && (
+      <div className="flex justify-center mb-6">
+        <h1 className="text-3xl font-black text-blue-500">
+          {dictionaryObj.dictionaryName}
+        </h1>
+      </div>
+    )}
+
     <div className="flex items-center justify-center gap-4 mx-auto mb-24 md:mb-14 relative w-full px-4 max-w-4xl">
-      <div className="relative" ref={menuRef}>
+      <div className="relative flex gap-2" ref={menuRef}>
         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={`p-3 rounded-lg transition-colors ${isMenuOpen ? 'bg-slate-700 text-white' : 'bg-slate-800/40 text-slate-400 hover:text-white'}`}>
           <FaBars className="text-xl"/>
         </button>
+        {isReadOnly && (
+          <button onClick={handleCopyDictionary} className="flex items-center gap-2 p-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors">
+            <FaCopy />
+            <span className="hidden sm:inline">Copy Dictionary</span>
+          </button>
+        )}
         {isMenuOpen && (
           <div className="absolute left-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[100] overflow-hidden">
             <button onClick={shuffleStacks} className='w-full flex items-center justify-between px-4 py-2 hover:bg-slate-700 text-slate-200 transition-colors border-b border-slate-700'>
@@ -500,20 +559,27 @@ function InnerD() {
 
             <div className="px-4 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900/30 border-b border-slate-700/50">Activities</div>
 
-            <button
-              onClick={() => { setIsMenuOpen(false); navigate(`/practice/${id}`); }}
-              className='w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-600/20 text-blue-400 transition-all border-b border-slate-700'
-            >
-              <FaGraduationCap className="text-blue-400 text-lg" />
-              <span className="text-sm font-medium">Practice</span>
-            </button>
+            {!isReadOnly && (
+              <>
+                <button
+                  onClick={() => { setIsMenuOpen(false); navigate(`/practice/${id}`); }}
+                  className='w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-600/20 text-blue-400 transition-all border-b border-slate-700'
+                >
+                  <FaGraduationCap className="text-blue-400 text-lg" />
+                  <span className="text-sm font-medium">Practice</span>
+                </button>
 
-            <button
-              onClick={resetAllWords}
-              className='w-full flex items-center gap-3 px-4 py-3 hover:bg-orange-600/20 text-orange-400 transition-all border-b border-slate-700'
-            >
-              <span className="text-xs font-bold uppercase tracking-tight">Reset All Progress</span>
-            </button>
+                <button
+                  onClick={resetAllWords}
+                  className='w-full flex items-center gap-3 px-4 py-3 hover:bg-rose-500/10 text-rose-400 transition-all border-b border-slate-700'
+                >
+                  <div className="w-4 h-4 rounded-full border-2 border-rose-400 flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 bg-rose-400 rounded-full"></div>
+                  </div>
+                  <span className="text-sm font-medium">Reset All Words</span>
+                </button>
+              </>
+            )}
 
             <div className="px-4 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900/30 border-b border-slate-700/50">Visibility Mode</div>
             <div className="px-4 py-4">
@@ -539,14 +605,55 @@ function InnerD() {
               </div>
             </div>
 
-            <div className="px-4 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900/30 border-b border-slate-700/50">Actions</div>
-            <button
-              onClick={() => { setModal(true); setIsMenuOpen(false); }}
-              className='w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-600/20 text-emerald-400 transition-all'
-            >
-              <FaPlus className="text-lg" />
-              <span className="text-sm font-bold uppercase tracking-tight">Add New Word</span>
-            </button>
+            {!isReadOnly && (
+              <>
+                <div className="px-4 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900/30 border-b border-slate-700/50">Actions</div>
+                <button
+                  onClick={() => { setModal(true); setIsMenuOpen(false); }}
+                  className='w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-600/20 text-emerald-400 transition-all'
+                >
+                  <FaPlus className="text-lg" />
+                  <span className="text-sm font-bold uppercase tracking-tight">Add New Word</span>
+                </button>
+              </>
+            )}
+            
+            {isReadOnly && (
+              <>
+                <div className="px-4 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-900/30 border-b border-slate-700/50">Community</div>
+                {isRatingMode ? (
+                  <div className='w-full flex items-center justify-between px-4 py-3 bg-slate-800/80 transition-all'>
+                    <div className="flex items-center gap-2">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <FaStar 
+                          key={star} 
+                          className={`cursor-pointer text-xl transition-all hover:scale-110 ${star <= (hoverRating || ratingValue) ? 'text-amber-400' : 'text-slate-600'}`}
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          onClick={() => setRatingValue(star)}
+                        />
+                      ))}
+                    </div>
+                    <button 
+                      onClick={submitRating}
+                      disabled={ratingValue === 0}
+                      className={`p-2 rounded-full transition-all ${ratingValue > 0 ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+                      title="Submit Rating"
+                    >
+                      <FaCheck size={14}/>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsRatingMode(true)}
+                    className='w-full flex items-center gap-3 px-4 py-3 hover:bg-amber-500/10 text-amber-400 transition-all'
+                  >
+                    <FaStar className="text-lg" />
+                    <span className="text-sm font-bold uppercase tracking-tight">Rate dictionary</span>
+                  </button>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>
@@ -556,14 +663,16 @@ function InnerD() {
         <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"/>
       </div>
 
-      <button
-        onClick={() => navigate(`/practice/${id}`)}
-        className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 hover:bg-blue-600 text-white font-semibold rounded-xl text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 flex-shrink-0"
-        title="Start Practice"
-      >
-        <FaGraduationCap className="text-base sm:text-lg" />
-        <span className="hidden sm:inline">Practice</span>
-      </button>
+      {!isReadOnly && (
+        <button
+          onClick={() => navigate(`/practice/${id}`)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 hover:bg-blue-600 text-white font-semibold rounded-xl text-xs sm:text-sm uppercase tracking-wider transition-all active:scale-95 flex-shrink-0"
+          title="Start Practice"
+        >
+          <FaGraduationCap className="text-base sm:text-lg" />
+          <span className="hidden sm:inline">Practice</span>
+        </button>
+      )}
     </div>
 
     <div className="flex flex-col w-full max-w-3xl mx-auto pb-10">
@@ -584,7 +693,7 @@ function InnerD() {
         }
         return (
           <div key={`word-${item.data.id}-${idx}`} className="overflow-hidden opacity-100 transition-all duration-300">
-            <Word id={item.data.id} text={item.data.text} translate={item.data.translate} extraForms={item.data.extraForms} hideMode={hideMode} onEdit={() => handleEditClick(item.data)} onDelete={() => handleDelete(item.data.id)} fontSize={fontSize} wordMargin={wordMargin} wordPaddingY={wordPaddingY} remembered={item.data.remembered} showStatus={showStatus}/>
+            <Word id={item.data.id} text={item.data.text} translate={item.data.translate} extraForms={item.data.extraForms} hideMode={hideMode} onEdit={isReadOnly ? undefined : () => handleEditClick(item.data)} onDelete={isReadOnly ? undefined : () => handleDelete(item.data.id)} fontSize={fontSize} wordMargin={wordMargin} wordPaddingY={wordPaddingY} remembered={item.data.remembered} showStatus={showStatus}/>
           </div>
         )
       })}

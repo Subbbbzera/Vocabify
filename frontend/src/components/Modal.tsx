@@ -24,6 +24,8 @@ interface ModalProp {
     showProgress?: boolean,
     showImported?: boolean,
     isPinned?: boolean,
+    isPublic?: boolean,
+    tags?: string[],
     editOpacity?: number,
     pinOpacity?: number
   }) => boolean | string | void,
@@ -46,6 +48,8 @@ interface ModalProp {
     showProgress: boolean;
     showImported: boolean;
     isPinned: boolean;
+    isPublic?: boolean;
+    tags?: string[];
     editOpacity?: number;
     pinOpacity?: number;
   }
@@ -70,6 +74,8 @@ function Modal({
   const [showProgress, setShowProgress] = useState(defaultSettings?.showProgress ?? true)
   const [showImported, setShowImported] = useState(defaultSettings?.showImported ?? true)
   const [isPinned] = useState(defaultSettings?.isPinned ?? false)
+  const [isPublic, setIsPublic] = useState(defaultSettings?.isPublic ?? false)
+  const [tagsInput, setTagsInput] = useState(defaultSettings?.tags ? defaultSettings.tags.join(', ') : "")
   const [editOpacity, setEditOpacity] = useState(defaultSettings?.editOpacity ?? 1.0)
   const [pinOpacity, setPinOpacity] = useState(defaultSettings?.pinOpacity ?? 1.0)
 
@@ -124,6 +130,8 @@ const Create = () =>{
     showProgress,
     showImported,
     isPinned,
+    isPublic,
+    tags: tagsInput.split(',').map(t => t.trim()).filter(t => t),
     editOpacity,
     pinOpacity
   });
@@ -351,7 +359,37 @@ go, went, gone - йти`} required
           )}
 
           {isDictionary && (
-            <div className='flex flex-col gap-2 mt-2'>
+            <div className='flex flex-col gap-4 mt-2'>
+              
+              {/* Tags & Public visibility */}
+              <div className='flex flex-col gap-3'>
+                <div className='flex flex-col gap-1 sm:gap-2'>
+                  <label className='text-sm font-semibold text-white/80 uppercase tracking-wider'>
+                    Tags (comma separated)
+                  </label>
+                  <input
+                    type="text" 
+                    value={tagsInput} 
+                    onChange={e => setTagsInput(e.target.value)}
+                    placeholder="e.g. travel, chore, school" 
+                    className='px-3 py-2 sm:px-4 sm:py-2 text-sm bg-slate-700 rounded-lg w-full text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all'
+                  />
+                </div>
+                
+                <div 
+                  className='flex items-center justify-between bg-slate-700/30 p-3 rounded-lg border border-slate-700/50 cursor-pointer transition-all hover:bg-slate-700/50' 
+                  onClick={() => setIsPublic(!isPublic)}
+                >
+                  <div className='flex flex-col'>
+                    <span className='text-xs font-bold uppercase tracking-wider text-white'>Make Public</span>
+                    <span className='text-[10px] text-slate-400'>Allow others to find and copy this dictionary</span>
+                  </div>
+                  <div className={`w-10 h-5 rounded-full transition-all relative ${isPublic ? 'bg-emerald-500' : 'bg-slate-600'}`}>
+                    <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${isPublic ? 'right-0.5' : 'left-0.5'}`}></div>
+                  </div>
+                </div>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}

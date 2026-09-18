@@ -46,6 +46,13 @@ export class DictionaryDto {
   @IsOptional()
   @IsNumber()
   pinOpacity?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+
+  @IsOptional()
+  tags?: string[];
 }
 
 export class ImportDictionaryDto {
