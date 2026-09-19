@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom"
 import Modal from "../components/Modal"
 import Word from "../components/forDictionaries/Word"
 import Input from "../components/Input"
-import { FaPlus, FaBars, FaShuffle, FaLayerGroup, FaChevronDown, FaGraduationCap, FaArrowUp, FaCopy, FaCheck } from "react-icons/fa6"
+import { FaPlus, FaBars, FaChevronDown, FaGraduationCap, FaArrowUp, FaCopy, FaCheck, FaCubesStacked, FaArrowsSpin } from "react-icons/fa6"
 import { FaSearch, FaStar } from "react-icons/fa"
 import type { AllWord, WordToShow } from "../types"
 
@@ -489,14 +489,14 @@ function InnerD() {
           <div className="absolute left-0 mt-2 w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[100] overflow-hidden">
             <button onClick={shuffleStacks} className='w-full flex items-center justify-between px-4 py-2 hover:bg-slate-700 text-slate-200 transition-colors border-b border-slate-700'>
               <div className="flex items-center gap-3">
-                <FaLayerGroup className="text-sky-400"/>
+                <FaCubesStacked className="text-sky-400"/>
                 <span className="text-sm font-medium">Shuffle Stacks</span>
               </div>
               {shuffledStacks && !isFlattened && <div className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]"></div>}
             </button>
             <button onClick={shuffleAllWords} className='w-full flex items-center justify-between px-4 py-2 hover:bg-slate-700 text-slate-200 transition-colors border-b border-slate-700'>
               <div className="flex items-center gap-3">
-                <FaShuffle className="text-emerald-400"/>
+                <FaArrowsSpin className="text-emerald-400"/>
                 <span className="text-sm font-medium">Shuffle All Words</span>
               </div>
               {shuffledStacks && isFlattened && <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>}

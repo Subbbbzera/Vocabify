@@ -1021,7 +1021,7 @@ function Practice() {
             {words.length >= 3 && (
               <>
                 <div className="absolute w-full h-[420px] top-0 left-0 -rotate-3 opacity-70 bg-slate-800 border border-slate-700 rounded-2xl -z-10 pointer-events-none shadow-md origin-center transition-all duration-300 flex flex-col items-center justify-center p-8 overflow-hidden">
-                  <span className="absolute top-6 text-[10px] font-semibold text-slate-500 uppercase tracking-widest blur-sm select-none">
+                  <span className="absolute top-6 left-8 text-[10px] font-semibold text-slate-500 uppercase tracking-widest blur-sm select-none">
                     {direction === 'origToTrans' ? 'Question' : 'Translation'}
                   </span>
                   <h2 className="text-3xl sm:text-4xl font-bold text-slate-300 text-center leading-tight blur-sm select-none">
@@ -1029,7 +1029,7 @@ function Practice() {
                   </h2>
                 </div>
                 <div className="absolute w-full h-[420px] top-0 left-0 rotate-3 opacity-70 bg-slate-800 border border-slate-700 rounded-2xl -z-10 pointer-events-none shadow-md origin-center transition-all duration-300 flex flex-col items-center justify-center p-8 overflow-hidden">
-                  <span className="absolute top-6 text-[10px] font-semibold text-slate-500 uppercase tracking-widest blur-sm select-none">
+                  <span className="absolute top-6 left-8 text-[10px] font-semibold text-slate-500 uppercase tracking-widest blur-sm select-none">
                     {direction === 'origToTrans' ? 'Question' : 'Translation'}
                   </span>
                   <h2 className="text-3xl sm:text-4xl font-bold text-slate-300 text-center leading-tight blur-sm select-none">
@@ -1071,7 +1071,7 @@ function Practice() {
                 >
                   {/* Front card */}
                   <div className={`absolute inset-0 backface-hidden bg-slate-800 border rounded-2xl flex flex-col items-center justify-center p-8 shadow-xl transition-all duration-300 select-none ${isCorrect === true ? 'border-emerald-500' : isCorrect === false ? 'border-rose-500' : 'border-slate-700'}`}>
-                    <span className="absolute top-6 text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
+                    <span className="absolute top-6 left-8 text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
                       {direction === 'origToTrans' ? 'Question' : 'Translation'}
                     </span>
                     <button
@@ -1089,7 +1089,7 @@ function Practice() {
 
                   {/* Back card */}
                   <div className={`absolute inset-0 backface-hidden bg-slate-800 border rounded-2xl flex flex-col items-center justify-center p-8 shadow-xl rotate-y-180 transition-all duration-300 select-none ${isCorrect === true ? 'border-emerald-500' : isCorrect === false ? 'border-rose-500' : 'border-blue-500/60'}`}>
-                    <span className="absolute top-6 text-[10px] font-semibold text-blue-400 uppercase tracking-widest">
+                    <span className="absolute top-6 left-8 text-[10px] font-semibold text-blue-400 uppercase tracking-widest">
                       {direction === 'origToTrans' ? 'Translation' : 'Question'}
                     </span>
                     <button
