@@ -29,18 +29,18 @@ function Home() {
         <div className='flex flex-col lg:flex-row items-center gap-16 lg:gap-24 w-full'>
           
           {/* Left: Dictionary Entry */}
-          <div className='flex-1 space-y-8 text-left z-10'>
-            <div className='space-y-3'>
-              <h1 className='text-6xl sm:text-7xl lg:text-8xl font-serif font-black text-white tracking-tight'>
+          <div className='flex-1 space-y-5 sm:space-y-8 text-left z-10'>
+            <div className='space-y-1 sm:space-y-3'>
+              <h1 className='text-5xl sm:text-7xl lg:text-8xl font-serif font-black text-white tracking-tight'>
                 Vocabify
               </h1>
-              <div className='flex flex-wrap items-center gap-4 text-xl sm:text-2xl text-blue-400 font-serif'>
+              <div className='flex flex-wrap items-center gap-2 sm:gap-4 text-lg sm:text-2xl text-blue-400 font-serif'>
                 <span className='tracking-wide opacity-90'>/vəˈkæbifai/</span>
                 <span className='italic text-slate-400 opacity-80'>• noun</span>
               </div>
             </div>
             
-            <div className='text-lg sm:text-xl text-slate-300 font-serif leading-relaxed pl-5 border-l-2 border-blue-500/40 space-y-3'>
+            <div className='text-base sm:text-xl text-slate-300 font-serif leading-relaxed pl-4 sm:pl-5 border-l-2 border-blue-500/40 space-y-2 sm:space-y-3'>
               <p>
                 <span className='italic font-semibold text-white'>1.</span> the body of words used in a particular language.
               </p>
@@ -49,18 +49,18 @@ function Home() {
               </p>
             </div>
 
-            <div className='pt-6 flex flex-row gap-2 sm:gap-4 font-sans'>
-              <Link to='/mainDictionary' className='flex-1 px-2 sm:px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm sm:text-base rounded-xl transition-all text-center flex items-center justify-center gap-2'>
+            <div className='pt-5 sm:pt-6 flex flex-row gap-2 sm:gap-4 font-sans'>
+              <Link to='/mainDictionary' className='flex-1 sm:flex-none px-2 sm:px-5 py-3 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm sm:text-sm rounded-xl sm:rounded-lg transition-all text-center flex items-center justify-center gap-1 sm:gap-2 shadow-[0_0_15px_rgba(37,99,235,0.3)]'>
                 Open Dictionaries
               </Link>
-              <Link to='/practice' className='flex-1 px-2 sm:px-6 py-3.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium text-sm sm:text-base rounded-xl transition-all text-center flex items-center justify-center gap-2'>
+              <Link to='/practice' className='flex-1 sm:flex-none px-2 sm:px-5 py-3 sm:py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium text-sm sm:text-sm rounded-xl sm:rounded-lg transition-all text-center flex items-center justify-center gap-1 sm:gap-2'>
                 Start Practice
               </Link>
             </div>
           </div>
 
           {/* Right: Live Flashcard Demo */}
-          <div className='flex-1 w-full max-w-md perspective-1000 relative'>
+          <div className='hidden lg:block flex-1 w-full max-w-md perspective-1000 relative'>
             {/* Stack cards */}
             <div className='absolute inset-0 bg-slate-800 border border-slate-700 rounded-2xl rotate-6 opacity-40 shadow-sm'></div>
             <div className='absolute inset-0 bg-slate-800 border border-slate-700 rounded-2xl -rotate-3 opacity-60 shadow-md'></div>
@@ -119,7 +119,7 @@ function Home() {
           </div>
 
           {/* Right side: Live counter */}
-          <div className='lg:col-span-5 flex flex-col justify-center space-y-10 lg:pl-8'>
+          <div className='lg:col-span-5 flex flex-col justify-center space-y-8 lg:space-y-10 lg:pl-8'>
             <div>
               <h3 className='text-3xl font-serif text-white mb-4'>Join the momentum</h3>
               <p className='text-slate-400 leading-relaxed text-lg'>
@@ -127,50 +127,52 @@ function Home() {
               </p>
             </div>
             
-            <div className='flex items-end gap-5 border-b border-slate-700/50 pb-8'>
-              <div className='text-6xl lg:text-7xl font-light text-blue-400 tabular-nums tracking-tighter'>
-                {wordsLearned.toLocaleString()}
+            <div className='flex flex-row lg:flex-col items-center lg:items-start justify-between gap-4 lg:gap-0 lg:space-y-10 border-t lg:border-t-0 border-slate-700/50 pt-6 lg:pt-0'>
+              <div className='flex items-end gap-3 lg:gap-5 lg:border-b border-slate-700/50 lg:pb-8'>
+                <div className='text-4xl sm:text-5xl lg:text-7xl font-light text-blue-400 tabular-nums tracking-tighter leading-none'>
+                  {wordsLearned.toLocaleString()}
+                </div>
+                <div className='text-slate-400 pb-1 text-[11px] sm:text-sm lg:text-lg leading-tight font-serif italic'>
+                  words learned<br className="hidden lg:block"/>today by users
+                </div>
               </div>
-              <div className='text-slate-400 pb-2 text-lg leading-tight font-serif italic'>
-                words learned<br/>today by users
+              
+              <div className='flex items-center gap-2 lg:gap-4 font-sans'>
+                 <div className='hidden sm:flex -space-x-3'>
+                   <div className='w-11 h-11 rounded-full bg-slate-700 border-2 border-slate-900 flex items-center justify-center text-sm font-bold text-white shadow-sm'>JD</div>
+                   <div className='w-11 h-11 rounded-full bg-blue-900 border-2 border-slate-900 flex items-center justify-center text-sm font-bold text-blue-200 shadow-sm'>AM</div>
+                   <div className='w-11 h-11 rounded-full bg-emerald-900 border-2 border-slate-900 flex items-center justify-center text-sm font-bold text-emerald-200 shadow-sm'>RK</div>
+                 </div>
+                 <div className='flex items-center text-[11px] sm:text-sm lg:text-base text-slate-400'>
+                   <span className='w-2 h-2 rounded-full bg-emerald-500 mr-1.5 lg:mr-2 animate-pulse'></span>
+                   {activeUsers} active now
+                 </div>
               </div>
-            </div>
-            
-            <div className='flex items-center gap-4 font-sans'>
-               <div className='flex -space-x-3'>
-                 <div className='w-11 h-11 rounded-full bg-slate-700 border-2 border-slate-900 flex items-center justify-center text-sm font-bold text-white shadow-sm'>JD</div>
-                 <div className='w-11 h-11 rounded-full bg-blue-900 border-2 border-slate-900 flex items-center justify-center text-sm font-bold text-blue-200 shadow-sm'>AM</div>
-                 <div className='w-11 h-11 rounded-full bg-emerald-900 border-2 border-slate-900 flex items-center justify-center text-sm font-bold text-emerald-200 shadow-sm'>RK</div>
-               </div>
-               <div className='flex items-center text-base text-slate-400'>
-                 <span className='w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse'></span>
-                 {activeUsers} active now
-               </div>
             </div>
           </div>
           
         </div>
 
         {/* ASYMMETRICAL FEATURE SECTION 2 (REVERSED) */}
-        <div className='grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-12 items-center pt-8'>
+        <div className='grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center pt-4 sm:pt-8'>
           
           {/* Left side: Text for SRS */}
-          <div className='lg:col-span-5 flex flex-col justify-center space-y-8 lg:pr-8'>
+          <div className='lg:col-span-5 flex flex-col justify-center space-y-6 sm:space-y-8 lg:pr-8'>
             <div>
-              <h3 className='text-3xl font-serif text-white mb-4'>Never forget again</h3>
-              <p className='text-slate-400 leading-relaxed text-lg'>
+              <h3 className='text-2xl sm:text-3xl font-serif text-white mb-3 sm:mb-4'>Never forget again</h3>
+              <p className='text-slate-400 leading-relaxed text-sm sm:text-lg'>
                 Our spaced repetition algorithm learns your memory patterns. Words you struggle with appear more often, while mastered words are scheduled right before you forget them.
               </p>
             </div>
             
-            <div className='flex gap-10 border-t border-slate-700/50 pt-8'>
+            <div className='flex gap-6 sm:gap-10 border-t border-slate-700/50 pt-6 sm:pt-8'>
               <div>
-                <div className='text-4xl font-light text-blue-400 tabular-nums'>94%</div>
-                <div className='text-slate-500 font-serif italic mt-2'>retention rate</div>
+                <div className='text-3xl sm:text-4xl font-light text-blue-400 tabular-nums'>94%</div>
+                <div className='text-xs sm:text-base text-slate-500 font-serif italic mt-1 sm:mt-2'>retention rate</div>
               </div>
               <div>
-                <div className='text-4xl font-light text-emerald-400 tabular-nums'>3x</div>
-                <div className='text-slate-500 font-serif italic mt-2'>faster learning</div>
+                <div className='text-3xl sm:text-4xl font-light text-emerald-400 tabular-nums'>3x</div>
+                <div className='text-xs sm:text-base text-slate-500 font-serif italic mt-1 sm:mt-2'>faster learning</div>
               </div>
             </div>
           </div>
