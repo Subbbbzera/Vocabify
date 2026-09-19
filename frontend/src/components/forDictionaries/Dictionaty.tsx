@@ -97,7 +97,7 @@ function Dictionaty(props: DictionaryProps) {
 
       {showFlag && (
         <div className='w-16 mt-4 mb-2 drop-shadow-md'>
-              <img src={`./public/${props.language}.png`} alt="Прапор" className=''/>
+              <img src={`/${props.language}.png`} alt="прапор" className=''/>
         </div>
       )}
 
