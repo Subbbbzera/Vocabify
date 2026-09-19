@@ -2,6 +2,8 @@
 
 A full-stack vocabulary learning web application with spaced practice, daily streak tracking, and real-time messaging between friends.
 
+URL: https://vocabify-app.onrender.com/
+
 ## Tech Stack
 
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, React Router
