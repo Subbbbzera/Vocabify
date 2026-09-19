@@ -49,11 +49,11 @@ function Home() {
               </p>
             </div>
 
-            <div className='pt-6 flex flex-col sm:flex-row gap-4 font-sans'>
-              <Link to='/mainDictionary' className='px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-all text-center flex items-center justify-center gap-2'>
+            <div className='pt-6 flex flex-row gap-2 sm:gap-4 font-sans'>
+              <Link to='/mainDictionary' className='flex-1 px-2 sm:px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm sm:text-base rounded-xl transition-all text-center flex items-center justify-center gap-2'>
                 Open Dictionaries
               </Link>
-              <Link to='/practice' className='px-6 py-3.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium rounded-xl transition-all text-center flex items-center justify-center gap-2'>
+              <Link to='/practice' className='flex-1 px-2 sm:px-6 py-3.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium text-sm sm:text-base rounded-xl transition-all text-center flex items-center justify-center gap-2'>
                 Start Practice
               </Link>
             </div>
