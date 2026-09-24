@@ -10,6 +10,7 @@ import Account from './pages/Account'
 import Notifications from './pages/Notifications'
 import Friends from './pages/Friends'
 import ProtectedRoute from './components/ProtectedRoute'
+import DuelArena from './pages/DuelArena'
 
 function App() {
  
@@ -45,6 +46,9 @@ function App() {
     }/>
     <Route path='/friends' element={
       <ProtectedRoute><Friends/></ProtectedRoute>
+    }/>
+    <Route path='/duel/:roomId' element={
+      <ProtectedRoute><DuelArena/></ProtectedRoute>
     }/>
   </Routes>
 

@@ -10,6 +10,8 @@ import { AuthModule } from './auth/auth.module';
 import { FriendModule } from './friend/friend.module';
 import { Friendship } from './friend/entities/friendship.entity';
 import { DirectMessage } from './friend/entities/message.entity';
+import { DuelModule } from './duel/duel.module';
+import { DuelResult } from './duel/entities/duel-result.entity';
 
 @Module({
   imports: [
@@ -37,7 +39,7 @@ import { DirectMessage } from './friend/entities/message.entity';
                 database: config.get<string>('DB_DATABASE', 'nestProject'),
               }),
           ssl: isSsl ? { rejectUnauthorized: false } : false,
-          entities: [Dictionary, Word, User, Friendship, DirectMessage],
+          entities: [Dictionary, Word, User, Friendship, DirectMessage, DuelResult],
           synchronize: true,
         };
       },
@@ -46,6 +48,7 @@ import { DirectMessage } from './friend/entities/message.entity';
     WordModule,
     AuthModule,
     FriendModule,
+    DuelModule,
   ],
   controllers: [],
   providers: [],

@@ -293,7 +293,7 @@ function Account() {
   const totalDicts = stats?.totalDictionaries || 0
   const masteredWords = stats?.learnedWords || 0
 
-  const totalXp = (totalWords * 10) + (masteredWords * 50) + (streak * 25)
+  const totalXp = (totalWords * 10) + (masteredWords * 50) + (streak * 25) + ((user?.duelWins || 0) * 50) + ((user?.duelLosses || 0) * 10)
   const xpPerLevel = 300
   const level = Math.max(1, Math.floor(totalXp / xpPerLevel) + 1)
   const currentLevelXp = totalXp % xpPerLevel
@@ -846,14 +846,18 @@ function Account() {
                 </div>
                 <div>
                   <div className='text-2xl sm:text-3xl font-black text-white leading-none'>
-                    {masteredWords}
+                    {(() => {
+                      const wins = user?.duelWins || 0;
+                      const total = wins + (user?.duelLosses || 0);
+                      return total > 0 ? `${Math.round((wins / total) * 100)}%` : '0%';
+                    })()}
                   </div>
                   <div className='text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mt-1'>
-                    Mastered
+                    Winrate
                   </div>
                 </div>
                 <div className='text-[9px] font-semibold text-amber-400/90 mt-2 bg-slate-900/60 py-0.5 px-1.5 rounded border border-slate-700/60 truncate'>
-                  {totalWords > 0 ? `${Math.round((masteredWords / totalWords) * 100)}% Learned` : '0%'}
+                  {(user?.duelWins || 0)}W / {(user?.duelLosses || 0)}L
                 </div>
               </div>
             </div>

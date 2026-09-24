@@ -25,11 +25,15 @@ export const getBackendUrl = (path: string = ''): string => {
   }
 
   if (typeof window !== 'undefined' && window.location) {
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isLocal = window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1' || 
+                    window.location.hostname.startsWith('192.168.') ||
+                    window.location.hostname.startsWith('10.');
+                    
     if (isLocal) {
-      return `${window.location.protocol}//127.0.0.1:5000${cleanPath}`;
+      return `${window.location.protocol}//${window.location.hostname}:5000${cleanPath}`;
     }
-    return `${window.location.origin}${cleanPath}`;
+    return `/api${cleanPath}`;
   }
   return `http://127.0.0.1:5000${cleanPath}`;
 };

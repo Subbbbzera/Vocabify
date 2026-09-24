@@ -29,4 +29,16 @@ export class User {
 
   @OneToMany(() => Dictionary, (dictionary) => dictionary.user)
   dictionaries: Dictionary[];
+
+  @Column({ default: 0 })
+  duelWins: number;
+
+  @Column({ default: 0 })
+  duelLosses: number;
+
+  @Column({ default: 0 })
+  currentWinStreak: number;
+
+  @Column({ default: 0 })
+  bestWinStreak: number;
 }

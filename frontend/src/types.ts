@@ -51,6 +51,8 @@ export type User = {
   avatarUrl?: string;
   lastSeen?: string | null;
   isOnline?: boolean;
+  duelWins?: number;
+  duelLosses?: number;
 };
 
 export type UserStats = {

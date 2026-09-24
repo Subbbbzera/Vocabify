@@ -4,6 +4,7 @@ import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
 import { json, urlencoded } from "express";
 import { ConfigService } from "@nestjs/config";
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function startServer() {
   const app = await NestFactory.create(AppModule);
@@ -42,9 +43,19 @@ async function startServer() {
     }),
   );
 
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Vocabify API')
+    .setDescription('The Vocabify API description')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document);
+
   const port = configService.get<number>('PORT') || 5000;
   await app.listen(port, '0.0.0.0');
   console.log(`Server is running at: http://localhost:${port}/api`);
+  console.log(`Swagger docs are available at: http://localhost:${port}/api/docs`);
 }
 
 startServer().catch((err) => {

@@ -10,7 +10,7 @@ import {
   FaFire,
   FaBook,
   FaBolt,
-  FaGraduationCap,
+  FaTrophy,
   FaPaperPlane,
   FaTrash,
   FaArrowLeft,
@@ -1259,11 +1259,17 @@ function Friends() {
                 </div>
 
                 <div className='bg-slate-900/70 p-3.5 rounded-xl border border-slate-700/60 text-center'>
-                  <div className='w-7 h-7 mx-auto bg-slate-800 text-blue-400 rounded-lg flex items-center justify-center border border-slate-700 mb-1.5'>
-                    <FaGraduationCap size={13} />
+                  <div className='w-7 h-7 mx-auto bg-slate-800 text-amber-400 rounded-lg flex items-center justify-center border border-slate-700 mb-1.5'>
+                    <FaTrophy size={13} />
                   </div>
-                  <div className='text-lg font-black text-white font-mono'>{inspectUser.stats.learnedWords}</div>
-                  <div className='text-[10px] text-slate-400 uppercase font-bold mt-0.5'>Learned Words</div>
+                  <div className='text-lg font-black text-white font-mono'>
+                    {(() => {
+                      const w = (inspectUser.user as any).duelWins || 0;
+                      const t = w + ((inspectUser.user as any).duelLosses || 0);
+                      return t > 0 ? `${Math.round((w / t) * 100)}%` : '0%';
+                    })()}
+                  </div>
+                  <div className='text-[10px] text-slate-400 uppercase font-bold mt-0.5'>Winrate</div>
                 </div>
               </div>
 

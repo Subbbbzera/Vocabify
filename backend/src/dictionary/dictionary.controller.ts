@@ -9,7 +9,9 @@ import {
   ParseIntPipe,
   UseGuards,
   Headers,
+  Res,
 } from '@nestjs/common';
+
 import { DictionaryService } from './dictionary.service';
 import { DictionaryDto, ImportDictionaryDto } from './dto/dictionary.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -147,6 +149,39 @@ export class DictionaryController {
   ) {
     const uid = userId || Number(headerId) || 1;
     return this.dictionaryService.getWordsGrouped(id, uid);
+  }
+
+  @Get(':id/export')
+  async exportDictionary(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: any,
+    @CurrentUser('id') userId: number,
+    @Headers('user-id') headerId?: string,
+  ) {
+    const uid = userId || Number(headerId) || 1;
+    
+    // Отримуємо словник та слова
+    const dictionary: any = await this.dictionaryService.getDictionaryById(id, uid);
+    const wordsObj: any = await this.dictionaryService.getWordsGrouped(id, uid);
+    
+    // Форматуємо слова, прибираючи непотрібні поля
+    const words = Object.values(wordsObj).flat().map((w: any) => {
+      const { id, dictionaryId, createdAt, updatedAt, ...wordData } = w;
+      return wordData;
+    });
+
+    // Форматуємо словник
+    const { dictionaryId, user, amountWord, rememberedWords, views, viewers, averageRating, totalRatings, ratingsMap, isPublic, ...dictData } = dictionary;
+
+    const exportData = {
+      ...dictData,
+      words
+    };
+
+    // Відправляємо як JSON-файл
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="dictionary-${dictionary.dictionaryName || id}.json"`);
+    res.send(JSON.stringify(exportData, null, 2));
   }
 
   @Post(':id/view')

@@ -88,6 +88,8 @@ export class FriendService {
             lastPracticeDate: friend.lastPracticeDate,
             lastSeen: friend.lastSeen,
             isOnline: this.chatGateway ? this.chatGateway.isUserOnline(friend.id) : false,
+            duelWins: friend.duelWins,
+            duelLosses: friend.duelLosses,
           },
           stats,
           unreadCount,
@@ -130,6 +132,8 @@ export class FriendService {
             email: r.sender.email,
             avatarUrl: r.sender.avatarUrl,
             streakCount: r.sender.streakCount,
+            duelWins: r.sender.duelWins,
+            duelLosses: r.sender.duelLosses,
           },
           stats,
         };
@@ -148,6 +152,8 @@ export class FriendService {
             email: r.receiver.email,
             avatarUrl: r.receiver.avatarUrl,
             streakCount: r.receiver.streakCount,
+            duelWins: r.receiver.duelWins,
+            duelLosses: r.receiver.duelLosses,
           },
           stats,
         };
@@ -298,6 +304,8 @@ export class FriendService {
           email: u.email,
           avatarUrl: u.avatarUrl,
           streakCount: u.streakCount,
+          duelWins: u.duelWins,
+          duelLosses: u.duelLosses,
           lastPracticeDate: u.lastPracticeDate,
           stats,
           relationship,
@@ -326,6 +334,8 @@ export class FriendService {
       lastPracticeDate: user.lastPracticeDate,
       lastSeen: user.lastSeen,
       isOnline: this.chatGateway ? this.chatGateway.isUserOnline(userId) : false,
+      duelWins: user.duelWins,
+      duelLosses: user.duelLosses,
       stats,
     };
   }

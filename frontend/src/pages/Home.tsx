@@ -50,7 +50,7 @@ function Home() {
             </div>
 
             <div className='pt-5 sm:pt-6 flex flex-row gap-2 sm:gap-4 font-sans'>
-              <Link to='/mainDictionary' className='flex-1 sm:flex-none px-2 sm:px-5 py-3 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm sm:text-sm rounded-xl sm:rounded-lg transition-all text-center flex items-center justify-center gap-1 sm:gap-2 shadow-[0_0_15px_rgba(37,99,235,0.3)]'>
+              <Link to='/mainDictionary' className='flex-1 sm:flex-none px-2 sm:px-5 py-3 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm sm:text-sm rounded-xl sm:rounded-lg transition-all text-center flex items-center justify-center gap-1 sm:gap-2]'>
                 Open Dictionaries
               </Link>
               <Link to='/practice' className='flex-1 sm:flex-none px-2 sm:px-5 py-3 sm:py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-medium text-sm sm:text-sm rounded-xl sm:rounded-lg transition-all text-center flex items-center justify-center gap-1 sm:gap-2'>

@@ -46,7 +46,7 @@ function Dictionaty(props: DictionaryProps) {
 
   return (
 
-  <div className='flex flex-col items-center justify-center bg-slate-800 w-[10.5rem] h-52 max-h-[30vh] md:w-[14rem] md:h-72 md:max-h-[80vh] rounded-lg ml-4 mb-5 overflow-hidden border-2 border-slate-500 duration-200 hover:border-slate-300 group cursor-pointer relative'
+  <div className='flex flex-col items-center justify-center bg-slate-800 w-full sm:w-[10.5rem] h-52 max-h-[30vh] md:w-[14rem] md:h-72 md:max-h-[80vh] rounded-lg sm:ml-4 sm:mb-5 overflow-hidden border-2 border-slate-500 duration-200 hover:border-slate-300 group cursor-pointer relative'
   onClick={props.onClick}>
 
     {props.coverImage && (

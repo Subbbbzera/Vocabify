@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { FaSearch } from 'react-icons/fa'
 import { FaPlus, FaFileImport } from 'react-icons/fa6'
 import Input from '../components/Input'
@@ -7,6 +7,7 @@ import Dictionaty from '../components/forDictionaries/Dictionaty'
 import { useNavigate } from 'react-router-dom'
 import type { MainDictionaries } from '../types'
 import { getBackendUrl } from '../services/api'
+import DuelMatchmakingModal from '../components/DuelMatchmakingModal'
 
 export type ModalData = {
   field1: string,
@@ -30,6 +31,42 @@ function MainDictionary() {
 
   const [modal, setModal] = useState(false)
   const [importModal, setImportModal] = useState(false)
+  const [duelModal, setDuelModal] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const parsed = JSON.parse(text);
+        
+        const userId = getUserId();
+        
+        const response = await fetch(getBackendUrl("/dictionary/import"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "user-id": userId?.toString() || ""
+          },
+          body: JSON.stringify(parsed)
+        });
+
+        if (!response.ok) throw new Error("Failed to import dictionary");
+        
+        alert("Dictionary imported successfully!");
+        fetchDictionaries();
+      } catch (err) {
+        console.error(err);
+        alert("Invalid file format or import failed. Make sure it's a valid JSON exported from Vocabify.");
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
   const [renameModal, setRenameModal] = useState(false)
   const [editingDictionary, setEditingDictionary] = useState<MainDictionaries | null>(null)
 
@@ -322,11 +359,11 @@ const handleViewDictionary = (id: number) => {
   fetch(getBackendUrl(`/dictionary/${id}/view`), {
     method: "POST",
     headers: {
-      "user-id": userId?.toString() || ""
     }
   });
 }
 
+/*
 const fetchWordsForExport = async (dictionaryId: number): Promise<any[]> => {
   const userId = getUserId();
   try {
@@ -350,23 +387,50 @@ const getFormattedText = (words: any[]): string => {
     return `${leftPart} - ${word.translate}`;
   }).join('\n');
 };
+*/
 
 const handleExportFile = async (dict: MainDictionaries) => {
-  const words = await fetchWordsForExport(dict.dictionaryId);
-  const text = getFormattedText(words);
-  if (!text) {
-    alert("No words to export!");
-    return;
+  try {
+    const token = localStorage.getItem('token') || '';
+    const userId = localStorage.getItem('userId') || '';
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${token}`
+    };
+    if (userId) {
+      headers['user-id'] = userId;
+    }
+
+    const res = await fetch(getBackendUrl(`/dictionary/${dict.dictionaryId}/export`), { headers });
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to export dictionary');
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Спробувати витягти ім'я файлу з заголовку Content-Disposition, якщо він є
+    const contentDisposition = res.headers.get('content-disposition');
+    let fileName = `dictionary-${dict.dictionaryName || dict.dictionaryId}.json`;
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="(.+)"/);
+      if (match && match[1]) {
+        fileName = match[1];
+      }
+    }
+    
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (err: any) {
+    console.error(err);
+    alert(err.message || 'Error exporting dictionary');
   }
-  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `dictionary-${dict.dictionaryName || dict.dictionaryId}.txt`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 };
 
 return (
@@ -379,7 +443,7 @@ return (
       <div className='flex gap-2 w-full'>
          <div className='relative flex-1'>
            <Input
-             placeholder='Search by name, language or tags...'
+             placeholder='Search by name or tags...'
              paddingX='px-3'
              paddingY='py-2'
              width='w-full'
@@ -391,35 +455,51 @@ return (
          </div>
 
          {activeTab === 'my' && (
-           <button
-             onClick={() => setImportModal(true)}
-             className='p-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-700 transition-all flex items-center gap-2 px-4 shadow-sm'
-             title="Smart Import from Samsung Notes"
-           >
-             <FaFileImport />
-             <span className='hidden sm:inline text-xs font-bold uppercase tracking-wider'>Import</span>
-           </button>
+           <>
+             <input 
+               type="file" 
+               accept=".json" 
+               style={{ display: 'none' }} 
+               ref={fileInputRef} 
+               onChange={handleFileUpload} 
+             />
+             <button
+               onClick={() => fileInputRef.current?.click()}
+               className='p-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-700 transition-all flex items-center gap-2 px-4 shadow-sm'
+               title="Import JSON Dictionary"
+             >
+               <FaFileImport />
+               <span className='hidden sm:inline text-xs font-bold uppercase tracking-wider'>Import</span>
+             </button>
+             <button
+               onClick={() => setDuelModal(true)}
+               className='p-2 bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-700 transition-all flex items-center gap-2 px-4 shadow-sm'
+               title="Play Duel"
+             >
+               <span className='hidden sm:inline text-xs font-bold uppercase tracking-wider'>Play</span>
+             </button>
+           </>
          )}
       </div>
 
-      {/* Tabs and Filters */}
-      <div className='flex items-center justify-between w-full flex-wrap gap-4'>
-        <div className='flex bg-slate-800 rounded-xl p-1 border border-slate-700 w-max shrink-0 shadow-sm'>
-          <button 
-            onClick={() => setActiveTab('my')}
-            className={`px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-300 ${activeTab === 'my' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
-          >
-            My Dictionaries
-          </button>
-          <button 
-            onClick={() => setActiveTab('suggested')}
-            className={`px-5 py-2 rounded-lg font-bold text-sm transition-all duration-300 border-2 ${activeTab === 'suggested' ? 'bg-transparent text-white border-blue-400' : 'border-transparent text-slate-400 hover:text-white'}`}
-          >
-            Suggested
-          </button>
-        </div>
+        {/* Tabs and Filters */}
+        <div className='flex items-center justify-between w-full flex-wrap gap-4'>
+          <div className='flex bg-slate-800 rounded-xl p-1 border border-slate-700 w-max shrink-0 shadow-sm'>
+            <button 
+              onClick={() => setActiveTab('my')}
+              className={`px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-300 ${activeTab === 'my' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+            >
+              My Dictionaries
+            </button>
+            <button 
+              onClick={() => setActiveTab('suggested')}
+              className={`px-5 py-2 rounded-lg font-bold text-sm transition-all duration-300 border-2 ${activeTab === 'suggested' ? 'bg-transparent text-white border-blue-400' : 'border-transparent text-slate-400 hover:text-white'}`}
+            >
+              Suggested
+            </button>
+          </div>
 
-        {activeTab === 'suggested' && (
+          {activeTab === 'suggested' && (
           <button 
             onClick={() => setFilterModal(true)}
             className='px-6 py-2 rounded-xl border border-slate-600 bg-slate-800 text-slate-300 font-bold text-sm hover:border-blue-400 hover:text-white transition-colors shrink-0 shadow-sm'
@@ -430,7 +510,7 @@ return (
       </div>
     </div>
 
-    <div className='flex flex-wrap mx-auto w-[90%] md:w-auto md:ml-[250px] lg:ml-[280px] gap-4'>
+    <div className='grid grid-cols-2 sm:flex sm:flex-wrap mx-auto w-[95%] sm:w-[90%] md:w-auto md:ml-[250px] lg:ml-[280px] gap-2 sm:gap-4'>
 
   {filteredDictionaries.length != 0 ?
 
@@ -455,9 +535,12 @@ return (
   : null}
 
       {activeTab === 'my' && (
-        <div className='flex items-center justify-center bg-none w-[10.5rem] h-52 max-h-[30vh] md:w-[14rem] md:h-72 md:max-h-[80vh] rounded-lg ml-4 mb-5 overflow-hidden border-2 border-dashed border-slate-500 duration-200 hover:border-slate-300 group'>
-          <button onClick={Close}>
-            <FaPlus className='text-2xl font-white duration-200 group-hover:scale-150'/>
+        <div 
+          className='flex items-center justify-center bg-none w-full sm:w-[10.5rem] h-52 max-h-[30vh] md:w-[14rem] md:h-72 md:max-h-[80vh] rounded-lg sm:ml-4 sm:mb-5 overflow-hidden border-2 border-dashed border-slate-500 duration-200 hover:border-slate-300 group cursor-pointer'
+          onClick={Close}
+        >
+          <button className="w-full h-full flex items-center justify-center outline-none focus:outline-none">
+            <FaPlus className='text-2xl text-slate-400 duration-200 group-hover:scale-150 group-hover:text-white'/>
           </button>
         </div>
       )}
@@ -597,6 +680,12 @@ return (
   />
 ) : null}
 
+{duelModal && (
+  <DuelMatchmakingModal
+    dictionaries={dictionaries}
+    onClose={() => setDuelModal(false)}
+  />
+)}
   </div>
 )
 
