@@ -359,6 +359,7 @@ const handleViewDictionary = (id: number) => {
   fetch(getBackendUrl(`/dictionary/${id}/view`), {
     method: "POST",
     headers: {
+      "user-id": userId?.toString() || ""
     }
   });
 }
