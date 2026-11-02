@@ -1,6 +1,6 @@
 # Vocabulary Learning App
 
-A full-stack vocabulary learning web application with spaced practice, daily streak tracking, and real-time messaging between friends.
+A full-stack vocabulary learning w
 
 URL: https://vocabify-app.onrender.com/
 

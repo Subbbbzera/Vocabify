@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaTimes, FaSpinner, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
-import { getSessionUser } from '../services/api';
+import { getSessionUser, getToken } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 
@@ -65,6 +65,9 @@ export default function DuelMatchmakingModal({ onClose, dictionaries }: DuelMatc
 
     const duelSocket = io(getDuelSocketUrl(), {
       transports: ['websocket', 'polling'],
+      auth: {
+        token: getToken() || '',
+      },
       reconnection: true,
       reconnectionAttempts: 5,
     });

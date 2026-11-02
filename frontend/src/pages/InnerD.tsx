@@ -1,4 +1,4 @@
-import { getBackendUrl } from '../services/api'
+import { api } from '../services/api'
 import { useEffect, useRef, useState, useMemo, useCallback, useDeferredValue } from "react"
 import { useParams, useNavigate, useLocation } from "react-router-dom"
 import Modal from "../components/Modal"
@@ -28,33 +28,19 @@ function InnerD() {
   const [hoverRating, setHoverRating] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  const getUserId = () => {
-    const saved = localStorage.getItem('sessionUser');
-    if (saved) return JSON.parse(saved).id;
-    return null;
-  }
-
   const resetAllWords = async () => {
     if (!id || !Allwords.length) return;
     if (!window.confirm("Are you sure you want to reset all words to 'Unlearned'?")) return;
-    const userId = getUserId();
 
     try {
       const allWordsFlat = Allwords.flatMap(([_, words]) => words);
       await Promise.all(allWordsFlat.map(word =>
-        fetch(getBackendUrl(`/word/update/${word.id}`), {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            "user-id": userId?.toString() || ""
-          },
-          body: JSON.stringify({
-            text: word.text,
-            translate: word.translate,
-            extraForms: word.extraForms || [],
-            dictionaryId: word.dictionaryId,
-            remembered: false
-          })
+        api.patch(`/word/update/${word.id}`, {
+          text: word.text,
+          translate: word.translate,
+          extraForms: word.extraForms || [],
+          dictionaryId: word.dictionaryId,
+          remembered: false
         })
       ));
 
@@ -69,40 +55,22 @@ function InnerD() {
 
   const submitRating = () => {
     if (!id || ratingValue < 1 || ratingValue > 5) return;
-    
-    const userId = getUserId();
-    fetch(getBackendUrl(`/dictionary/${id}/rate`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "user-id": userId?.toString() || ""
-      },
-      body: JSON.stringify({ stars: ratingValue })
-    })
-    .then(res => res.json())
-    .then(() => {
-      alert("Rating submitted successfully!");
-      setIsRatingMode(false);
-      setIsMenuOpen(false);
-    });
+
+    api.post(`/dictionary/${id}/rate`, { stars: ratingValue })
+      .then(() => {
+        alert("Rating submitted successfully!");
+        setIsRatingMode(false);
+        setIsMenuOpen(false);
+      });
   };
 
   const handleCopyDictionary = () => {
     if (!id) return;
-    const userId = getUserId();
-    fetch(getBackendUrl(`/dictionary/copy`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "user-id": userId?.toString() || ""
-      },
-      body: JSON.stringify({ id: Number(id) })
-    })
-    .then(res => res.json())
-    .then(() => {
-      alert("Dictionary copied successfully!");
-      navigate('/mainDictionary');
-    })
+    api.post(`/dictionary/copy`, { id: Number(id) })
+      .then(() => {
+        alert("Dictionary copied successfully!");
+        navigate('/mainDictionary');
+      });
   };
 
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
@@ -185,14 +153,7 @@ function InnerD() {
 
   const fetchWords = useCallback(() => {
     if (!id || id === "undefined") return;
-    const userId = getUserId();
-    fetch(getBackendUrl(`/word/getWord/${id}`), {
-      headers: { "user-id": userId?.toString() || "" }
-    })
-    .then(res => {
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      return res.json();
-    })
+    api.get<Record<string, AllWord[]>>(`/word/getWord/${id}`)
     .then(data => {
       if (!data || typeof data !== 'object' || (data as any).statusCode) {
         console.warn("Expected word dictionary map, received:", data);
@@ -294,7 +255,6 @@ function InnerD() {
 
   const CreateWord = (object : {field1: string, field2: string, transcription?: string, partOfSpeech?: string, extraFields?: string[], remembered?: boolean}) : boolean | string =>{
     const numId = Number(id)
-    const userId = getUserId();
     const wordToSave = {
       text: object.field1.trim(), translate: object.field2.trim(),
       transcription: object.transcription,
@@ -319,16 +279,9 @@ function InnerD() {
     }
 
     if(wordToSave.text !== '' && wordToSave.translate !== ''){
-      fetch(getBackendUrl("/word/save"), {
-        method: "POST",
-        headers: {
-          "Content-type" : "Application/json",
-          "user-id": userId?.toString() || ""
-        },
-        body: JSON.stringify(wordToSave)
-      })
-      .then(res => res.ok ? res.text().then(t => t ? JSON.parse(t) : {}) : Promise.reject("Failed to save"))
-      .then(() => fetchWords())
+      api.post("/word/save", wordToSave)
+        .then(() => fetchWords())
+        .catch(err => console.error("Failed to save:", err));
     }
     return true
   }
@@ -355,35 +308,23 @@ function InnerD() {
       return "У вас таке слово вже є!";
     }
 
-    const userId = getUserId();
-    fetch(getBackendUrl(`/word/update/${editingWord.id}`), {
-      method: "PATCH",
-      headers: { 
-        "Content-Type": "application/json",
-        "user-id": userId?.toString() || "" 
-      },
-      body: JSON.stringify({
-        text: object.field1.trim(),
-        translate: object.field2.trim(),
-        transcription: object.transcription,
-        partOfSpeech: object.partOfSpeech,
-        extraForms: object.extraFields?.filter(f => f.trim() !== ""),
-        dictionaryId: editingWord.dictionaryId,
-        remembered: object.remembered ?? editingWord.remembered
-      })
+    api.patch(`/word/update/${editingWord.id}`, {
+      text: object.field1.trim(),
+      translate: object.field2.trim(),
+      transcription: object.transcription,
+      partOfSpeech: object.partOfSpeech,
+      extraForms: object.extraFields?.filter(f => f.trim() !== ""),
+      dictionaryId: editingWord.dictionaryId,
+      remembered: object.remembered ?? editingWord.remembered
     })
-    .then(res => res.ok ? res.text().then(t => t ? JSON.parse(t) : {}) : Promise.reject("Failed to update"))
     .then(() => { fetchWords(); setEditModal(false); setEditingWord(null); })
+    .catch(err => console.error("Failed to update:", err));
     return true;
   }
 
   const handleDelete = useCallback((wordId: number) => {
-    const userId = getUserId();
-    fetch(getBackendUrl(`/word/delete/${wordId}`), {
-      method: "DELETE",
-      headers: { "user-id": userId?.toString() || "" }
-    })
-    .then(() => fetchWords())
+    api.delete(`/word/delete/${wordId}`)
+      .then(() => fetchWords())
   }, [fetchWords])
 
   const shuffleStacks = () => {

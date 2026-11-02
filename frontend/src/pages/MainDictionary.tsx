@@ -6,7 +6,7 @@ import Modal from '../components/Modal'
 import Dictionaty from '../components/forDictionaries/Dictionaty'
 import { useNavigate } from 'react-router-dom'
 import type { MainDictionaries } from '../types'
-import { getBackendUrl } from '../services/api'
+import { api, getBackendUrl, getToken } from '../services/api'
 import DuelMatchmakingModal from '../components/DuelMatchmakingModal'
 
 export type ModalData = {
@@ -43,20 +43,9 @@ function MainDictionary() {
       try {
         const text = e.target?.result as string;
         const parsed = JSON.parse(text);
-        
-        const userId = getUserId();
-        
-        const response = await fetch(getBackendUrl("/dictionary/import"), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "user-id": userId?.toString() || ""
-          },
-          body: JSON.stringify(parsed)
-        });
 
-        if (!response.ok) throw new Error("Failed to import dictionary");
-        
+        await api.post("/dictionary/import", parsed);
+
         alert("Dictionary imported successfully!");
         fetchDictionaries();
       } catch (err) {
@@ -85,30 +74,16 @@ function MainDictionary() {
 
   const navigate = useNavigate()
 
-const getUserId = () => {
-  const saved = localStorage.getItem('sessionUser');
-  if (saved) return JSON.parse(saved).id;
-  return null;
-}
-
 const fetchDictionaries = () => {
-  const userId = getUserId();
-  fetch(getBackendUrl("/dictionary/Getdictionary"), {
-    headers: { "user-id": userId?.toString() || "" }
-  })
-  .then(res => res.ok ? res.json() : [])
-  .then(data => setDictionaries(Array.isArray(data) ? data : []))
-  .catch(err => console.error(err));
+  api.get<MainDictionaries[]>("/dictionary/Getdictionary")
+    .then(data => setDictionaries(Array.isArray(data) ? data : []))
+    .catch(err => console.error(err));
 }
 
 const fetchSuggested = () => {
-  const userId = getUserId();
-  fetch(getBackendUrl("/dictionary/suggested"), {
-    headers: { "user-id": userId?.toString() || "" }
-  })
-  .then(res => res.ok ? res.json() : [])
-  .then(data => setSuggestedDictionaries(Array.isArray(data) ? data : []))
-  .catch(err => console.error(err));
+  api.get<MainDictionaries[]>("/dictionary/suggested")
+    .then(data => setSuggestedDictionaries(Array.isArray(data) ? data : []))
+    .catch(err => console.error(err));
 }
 
 useEffect(() => {
@@ -146,8 +121,6 @@ const Close = () =>{
 }
 
 const Create = (object : ModalData) =>{
-  const userId = getUserId();
-
   const dictionaryToSave = {
     dictionaryName : object.field1,
     language : object.field2,
@@ -164,28 +137,15 @@ const Create = (object : ModalData) =>{
     pinOpacity: object.pinOpacity
   }
 
-   if(dictionaryToSave.dictionaryName.trim() && dictionaryToSave.language.trim()){
-
-    fetch(getBackendUrl("/dictionary/create"), {
-      method: "POST",
-      headers: {
-        "Content-Type":"application/json",
-        "user-id": userId?.toString() || ""
-      },
-      body: JSON.stringify(dictionaryToSave)
-    })
-    .then(async res => {
-      if (!res.ok) throw new Error("Failed to create");
-      const text = await res.text();
-      return text ? JSON.parse(text) : {};
-    })
-    .then(() => fetchDictionaries())
+  if(dictionaryToSave.dictionaryName.trim() && dictionaryToSave.language.trim()){
+    api.post("/dictionary/create", dictionaryToSave)
+      .then(() => fetchDictionaries())
+      .catch(err => console.error(err));
   }
-    return true
+  return true
 }
 
 const SmartImport = (object: ModalData) => {
-  const userId = getUserId();
   const text = object.field1;
   const language = object.field2;
   const dictionaryName = "Imported " + new Date().toLocaleDateString();
@@ -208,31 +168,24 @@ const SmartImport = (object: ModalData) => {
   }).filter(w => w !== null);
 
   if (words.length > 0) {
-    fetch(getBackendUrl("/dictionary/import"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "user-id": userId?.toString() || ""
-      },
-      body: JSON.stringify({
-        dictionaryName,
-        language,
-        words,
-        coverImage: object.coverImage,
-        showName: object.showName,
-        showLanguage: object.showLanguage,
-        showFlag: object.showFlag,
-        showProgress: object.showProgress,
-        showImported: object.showImported,
-        isPinned: object.isPinned || false,
-        isPublic: object.isPublic,
-        tags: object.tags,
-        editOpacity: object.editOpacity,
-        pinOpacity: object.pinOpacity
-      })
+    api.post("/dictionary/import", {
+      dictionaryName,
+      language,
+      words,
+      coverImage: object.coverImage,
+      showName: object.showName,
+      showLanguage: object.showLanguage,
+      showFlag: object.showFlag,
+      showProgress: object.showProgress,
+      showImported: object.showImported,
+      isPinned: object.isPinned || false,
+      isPublic: object.isPublic,
+      tags: object.tags,
+      editOpacity: object.editOpacity,
+      pinOpacity: object.pinOpacity
     })
-    .then(res => res.json())
-    .then(() => fetchDictionaries());
+      .then(() => fetchDictionaries())
+      .catch(err => console.error(err));
   }
 
   return true;
@@ -245,56 +198,40 @@ const handleRenameClick = (dictionary: MainDictionaries) => {
 
 const ConfirmUpdate = (object: ModalData) => {
   if (editingDictionary && object.field1.trim()) {
-    const userId = getUserId();
-    fetch(getBackendUrl("/dictionary/update"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "user-id": userId?.toString() || ""
-      },
-      body: JSON.stringify({
-        id: editingDictionary.dictionaryId,
-        dictionaryName: object.field1,
-        language: object.field2,
-        coverImage: object.coverImage,
-        showName: object.showName,
-        showLanguage: object.showLanguage,
-        showFlag: object.showFlag,
-        showProgress: object.showProgress,
-        showImported: object.showImported,
-        isPinned: object.isPinned ?? editingDictionary.isPinned,
-        isPublic: object.isPublic,
-        tags: object.tags,
-        editOpacity: object.editOpacity,
-        pinOpacity: object.pinOpacity
+    api.post("/dictionary/update", {
+      id: editingDictionary.dictionaryId,
+      dictionaryName: object.field1,
+      language: object.field2,
+      coverImage: object.coverImage,
+      showName: object.showName,
+      showLanguage: object.showLanguage,
+      showFlag: object.showFlag,
+      showProgress: object.showProgress,
+      showImported: object.showImported,
+      isPinned: object.isPinned ?? editingDictionary.isPinned,
+      isPublic: object.isPublic,
+      tags: object.tags,
+      editOpacity: object.editOpacity,
+      pinOpacity: object.pinOpacity
+    })
+      .then(() => {
+        fetchDictionaries()
+        setRenameModal(false)
+        setEditingDictionary(null)
       })
-    })
-    .then(res => res.ok ? res.text().then(t => t ? JSON.parse(t) : {}) : Promise.reject("Failed to update"))
-    .then(() => {
-      fetchDictionaries()
-      setRenameModal(false)
-      setEditingDictionary(null)
-    })
+      .catch(err => console.error(err))
   }
   return true
 }
 
 const handleDeleteDictionary = () => {
   if (editingDictionary) {
-    const userId = getUserId();
-    fetch(getBackendUrl(`/dictionary/delete`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "user-id": userId?.toString() || ""
-      },
-      body: JSON.stringify({ id: editingDictionary.dictionaryId })
-    })
-    .then(() => {
-      fetchDictionaries()
-      setRenameModal(false)
-      setEditingDictionary(null)
-    })
+    api.post(`/dictionary/delete`, { id: editingDictionary.dictionaryId })
+      .then(() => {
+        fetchDictionaries()
+        setRenameModal(false)
+        setEditingDictionary(null)
+      })
   }
 }
 
@@ -305,101 +242,38 @@ const handleCopyDictionary = () => {
 }
 
 const handleCopyDictionaryDirectly = (id: number) => {
-  const userId = getUserId();
-  fetch(getBackendUrl(`/dictionary/copy`), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "user-id": userId?.toString() || ""
-    },
-    body: JSON.stringify({ id })
-  })
-  .then(res => res.json())
-  .then(() => {
-    fetchDictionaries();
-    if (activeTab === 'suggested') {
-      alert("Dictionary copied successfully!");
-    }
-    setRenameModal(false);
-    setEditingDictionary(null);
-  })
+  api.post(`/dictionary/copy`, { id })
+    .then(() => {
+      fetchDictionaries();
+      if (activeTab === 'suggested') {
+        alert("Dictionary copied successfully!");
+      }
+      setRenameModal(false);
+      setEditingDictionary(null);
+    })
 }
 
 const togglePinDictionary = (dict: MainDictionaries, e: React.MouseEvent) => {
   e.stopPropagation()
-  const userId = getUserId();
-  fetch(getBackendUrl(`/dictionary/update/${dict.dictionaryId}`), {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "user-id": userId?.toString() || ""
-    },
-    body: JSON.stringify({ isPinned: !dict.isPinned })
-  })
-  .then(() => fetchDictionaries())
+  api.patch(`/dictionary/update/${dict.dictionaryId}`, { isPinned: !dict.isPinned })
+    .then(() => fetchDictionaries())
 }
 
-
-
 const handleRateDictionary = (id: number, stars: number) => {
-  const userId = getUserId();
-  fetch(getBackendUrl(`/dictionary/${id}/rate`), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "user-id": userId?.toString() || ""
-    },
-    body: JSON.stringify({ stars })
-  })
-  .then(() => fetchSuggested());
+  api.post(`/dictionary/${id}/rate`, { stars })
+    .then(() => fetchSuggested());
 }
 
 const handleViewDictionary = (id: number) => {
-  const userId = getUserId();
-  fetch(getBackendUrl(`/dictionary/${id}/view`), {
-    method: "POST",
-    headers: {
-      "user-id": userId?.toString() || ""
-    }
-  });
+  api.post(`/dictionary/${id}/view`).catch(() => {});
 }
-
-/*
-const fetchWordsForExport = async (dictionaryId: number): Promise<any[]> => {
-  const userId = getUserId();
-  try {
-    const res = await fetch(getBackendUrl(`/word/getWord/${dictionaryId}`), {
-      headers: { "user-id": userId?.toString() || "" }
-    });
-    const data = await res.json();
-    const allWordsFlat = Object.values(data).flat();
-    return allWordsFlat;
-  } catch (err) {
-    console.error("Failed to fetch words for export:", err);
-    alert("Failed to load dictionary words.");
-    return [];
-  }
-};
-
-const getFormattedText = (words: any[]): string => {
-  if (!words.length) return "";
-  return words.map(word => {
-    const leftPart = [word.text, ...(word.extraForms || [])].join(', ');
-    return `${leftPart} - ${word.translate}`;
-  }).join('\n');
-};
-*/
 
 const handleExportFile = async (dict: MainDictionaries) => {
   try {
-    const token = localStorage.getItem('token') || '';
-    const userId = localStorage.getItem('userId') || '';
+    const token = getToken() || '';
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${token}`
     };
-    if (userId) {
-      headers['user-id'] = userId;
-    }
 
     const res = await fetch(getBackendUrl(`/dictionary/${dict.dictionaryId}/export`), { headers });
     

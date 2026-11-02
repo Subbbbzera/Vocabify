@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { playNotificationSound } from '../services/socket';
-import { getSessionUser } from '../services/api';
+import { getSessionUser, getToken } from '../services/api';
 import { FaBolt, FaArrowLeft } from 'react-icons/fa';
 import { io, Socket } from 'socket.io-client';
 
@@ -40,7 +40,6 @@ export default function DuelArena() {
 
   const timerRef = useRef<any>(null);
   const duelSocketRef = useRef<Socket | null>(null);
-  const myScoreRef = useRef(0);
 
   const me = players.find((p: any) => p.userId === user?.id) || players[0];
   const opponent = players.find((p: any) => p.userId !== user?.id) || players[1];
@@ -64,6 +63,9 @@ export default function DuelArena() {
 
     const duelSocket = io(getDuelSocketUrl(), {
       transports: ['websocket', 'polling'],
+      auth: {
+        token: getToken() || '',
+      },
       reconnection: true,
     });
     duelSocketRef.current = duelSocket;
@@ -73,8 +75,19 @@ export default function DuelArena() {
       duelSocket.emit('rejoin_duel', { roomId });
     });
 
-    duelSocket.on('opponent_scored', (data: { score: number }) => {
-      setOpponentScore(prev => prev + data.score);
+    duelSocket.on('answer_result', (data: { roundIndex: number; pointsEarned: number; totalScore: number; isCorrect: boolean }) => {
+      setMyScore(data.totalScore);
+      if (data.isCorrect) {
+        playNotificationSound();
+      }
+    });
+
+    duelSocket.on('opponent_scored', (data: { score: number; totalScore?: number }) => {
+      if (typeof data.totalScore === 'number') {
+        setOpponentScore(data.totalScore);
+      } else {
+        setOpponentScore(prev => prev + data.score);
+      }
     });
 
     return () => {
@@ -131,20 +144,12 @@ export default function DuelArena() {
     setSelectedOption(option);
     setRoundStatus('revealed');
 
-    const roundData = rounds[currentRound];
-    const isCorrect = option === roundData.correctOption;
-
-    let pointsEarned = 0;
-    if (isCorrect) {
-      const timePercent = timeLeft / roundData.timeLimit;
-      pointsEarned = Math.round(50 + (50 * timePercent));
-      setMyScore(prev => prev + pointsEarned);
-      myScoreRef.current += pointsEarned;
-      playNotificationSound();
-    }
-
     if (duelSocketRef.current) {
-      duelSocketRef.current.emit('duel_score_update', { roomId, userId: me.userId, score: pointsEarned });
+      duelSocketRef.current.emit('submit_answer', {
+        roomId,
+        roundIndex: currentRound,
+        selectedOption: option,
+      });
     }
 
     setTimeout(() => {
@@ -154,13 +159,6 @@ export default function DuelArena() {
         setCurrentRound(prev => prev + 1);
       } else {
         setPhase('finished');
-        if (duelSocketRef.current) {
-          duelSocketRef.current.emit('duel_end', {
-            roomId,
-            player1: { id: me.userId, score: myScoreRef.current },
-            player2: { id: opponent.userId, score: opponentScore },
-          });
-        }
       }
     }, 1500);
   };

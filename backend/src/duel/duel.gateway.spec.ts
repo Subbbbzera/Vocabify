@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
 import { DuelGateway } from './duel.gateway';
 import { DuelService } from './duel.service';
 
@@ -14,6 +15,15 @@ describe('DuelGateway', () => {
           useValue: {
             leaveQueue: jest.fn(),
             joinQueue: jest.fn(),
+            createMatch: jest.fn(),
+            submitAnswer: jest.fn(),
+            isPlayerInMatch: jest.fn(),
+          },
+        },
+        {
+          provide: JwtService,
+          useValue: {
+            verify: jest.fn(),
           },
         },
       ],

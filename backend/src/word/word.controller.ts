@@ -8,7 +8,6 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
-  Headers,
 } from '@nestjs/common';
 import { CreateWordDto, UpdateWordDto } from './dto/word.dto';
 import { WordService } from './word.service';
@@ -24,10 +23,8 @@ export class WordController {
   saveWord(
     @Body() dto: CreateWordDto,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.wordService.saveWord(dto, uid);
+    return this.wordService.saveWord(dto, userId);
   }
 
   @Get('external-info/:text')
@@ -98,20 +95,16 @@ export class WordController {
   getWordByDict(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.wordService.getWord(id, uid);
+    return this.wordService.getWord(id, userId);
   }
 
   @Get(['details/:id', ':id'])
   getWordById(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.wordService.getWordById(id, uid);
+    return this.wordService.getWordById(id, userId);
   }
 
   @Patch([':id', 'update/:id'])
@@ -119,10 +112,8 @@ export class WordController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateWordDto,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.wordService.updateWord(id, dto, uid);
+    return this.wordService.updateWord(id, dto, userId);
   }
 
   @Post('update/:id')
@@ -130,30 +121,24 @@ export class WordController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateWordDto,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.wordService.updateWord(id, dto, uid);
+    return this.wordService.updateWord(id, dto, userId);
   }
 
   @Delete([':id', 'delete/:id'])
   deleteWord(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.wordService.deleteWord(id, uid);
+    return this.wordService.deleteWord(id, userId);
   }
 
   @Post('delete/:id')
   deleteWordPost(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.wordService.deleteWord(id, uid);
+    return this.wordService.deleteWord(id, userId);
   }
 
   @Post([':id/examples', 'addExample/:id'])
@@ -161,10 +146,8 @@ export class WordController {
     @Param('id', ParseIntPipe) id: number,
     @Body('example') example: any,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.wordService.addExample(id, example, uid);
+    return this.wordService.addExample(id, example, userId);
   }
 
   @Patch([':id/examples/:index', 'updateExample/:id/:index'])
@@ -173,10 +156,8 @@ export class WordController {
     @Param('index', ParseIntPipe) index: number,
     @Body('example') example: any,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.wordService.updateExample(id, index, example, uid);
+    return this.wordService.updateExample(id, index, example, userId);
   }
 
   @Delete([':id/examples/:index', 'deleteExample/:id/:index'])
@@ -184,9 +165,7 @@ export class WordController {
     @Param('id', ParseIntPipe) id: number,
     @Param('index', ParseIntPipe) index: number,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.wordService.deleteExample(id, index, uid);
+    return this.wordService.deleteExample(id, index, userId);
   }
 }

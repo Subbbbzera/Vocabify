@@ -8,7 +8,6 @@ import {
   Delete,
   ParseIntPipe,
   UseGuards,
-  Headers,
   Res,
 } from '@nestjs/common';
 
@@ -23,71 +22,51 @@ export class DictionaryController {
   constructor(private readonly dictionaryService: DictionaryService) {}
 
   @Get(['', 'Getdictionary'])
-  getDictionaries(
-    @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
-  ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.getDictionaries(uid);
+  getDictionaries(@CurrentUser('id') userId: number) {
+    return this.dictionaryService.getDictionaries(userId);
   }
 
   @Get('suggested')
-  getSuggestedDictionaries(
-    @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
-  ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.getSuggestedDictionaries(uid);
+  getSuggestedDictionaries(@CurrentUser('id') userId: number) {
+    return this.dictionaryService.getSuggestedDictionaries(userId);
   }
 
   @Get('stats')
-  getStats(
-    @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
-  ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.getStats(uid);
+  getStats(@CurrentUser('id') userId: number) {
+    return this.dictionaryService.getStats(userId);
   }
 
   @Post(['', 'create'])
   createDictionary(
     @Body() dto: DictionaryDto,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.createDictionary(dto, uid);
+    return this.dictionaryService.createDictionary(dto, userId);
   }
 
   @Post('import')
   importDictionary(
     @Body() data: ImportDictionaryDto,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.importDictionary(data, uid);
+    return this.dictionaryService.importDictionary(data, userId);
   }
 
   @Get(['InnerD/:id', ':id'])
   getDictionaryById(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.getDictionaryById(id, uid);
+    return this.dictionaryService.getDictionaryById(id, userId);
   }
 
   @Post('update')
   updateByPost(
     @Body() body: any,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
     const { id, ...dto } = body;
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.updateDictionary(Number(id), dto, uid);
+    return this.dictionaryService.updateDictionary(Number(id), dto, userId);
   }
 
   @Patch([':id', 'update/:id'])
@@ -95,60 +74,48 @@ export class DictionaryController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: Partial<DictionaryDto>,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.updateDictionary(id, dto, uid);
+    return this.dictionaryService.updateDictionary(id, dto, userId);
   }
 
   @Post('delete')
   deleteByPost(
     @Body() body: { id: number },
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.deleteDictionary(Number(body.id), uid);
+    return this.dictionaryService.deleteDictionary(Number(body.id), userId);
   }
 
   @Delete([':id', 'delete/:id'])
   deleteDictionary(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.deleteDictionary(id, uid);
+    return this.dictionaryService.deleteDictionary(id, userId);
   }
 
   @Post('copy')
   copyByPost(
     @Body() body: { id: number },
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.copyDictionary(Number(body.id), uid);
+    return this.dictionaryService.copyDictionary(Number(body.id), userId);
   }
 
   @Post([':id/copy', 'copy/:id'])
   copyDictionary(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.copyDictionary(id, uid);
+    return this.dictionaryService.copyDictionary(id, userId);
   }
 
   @Get([':id/words', 'words/:id'])
   getWordsByDictionary(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.getWordsGrouped(id, uid);
+    return this.dictionaryService.getWordsGrouped(id, userId);
   }
 
   @Get(':id/export')
@@ -156,31 +123,25 @@ export class DictionaryController {
     @Param('id', ParseIntPipe) id: number,
     @Res() res: any,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    
-    // Отримуємо словник та слова
-    const dictionary: any = await this.dictionaryService.getDictionaryById(id, uid);
-    const wordsObj: any = await this.dictionaryService.getWordsGrouped(id, uid);
-    
-    // Форматуємо слова, прибираючи непотрібні поля
+    const dictionary: any = await this.dictionaryService.getDictionaryById(id, userId);
+    const wordsObj: any = await this.dictionaryService.getWordsGrouped(id, userId);
+
     const words = Object.values(wordsObj).flat().map((w: any) => {
       const { id, dictionaryId, createdAt, updatedAt, ...wordData } = w;
       return wordData;
     });
 
-    // Форматуємо словник
     const { dictionaryId, user, amountWord, rememberedWords, views, viewers, averageRating, totalRatings, ratingsMap, isPublic, ...dictData } = dictionary;
 
     const exportData = {
       ...dictData,
-      words
+      words,
     };
 
-    // Відправляємо як JSON-файл
+    const safeName = encodeURIComponent(dictionary.dictionaryName || String(id));
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="dictionary-${dictionary.dictionaryName || id}.json"`);
+    res.setHeader('Content-Disposition', `attachment; filename="dictionary-${safeName}.json"`);
     res.send(JSON.stringify(exportData, null, 2));
   }
 
@@ -188,10 +149,8 @@ export class DictionaryController {
   incrementViews(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.incrementViews(id, uid);
+    return this.dictionaryService.incrementViews(id, userId);
   }
 
   @Post(':id/rate')
@@ -199,9 +158,7 @@ export class DictionaryController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { stars: number },
     @CurrentUser('id') userId: number,
-    @Headers('user-id') headerId?: string,
   ) {
-    const uid = userId || Number(headerId) || 1;
-    return this.dictionaryService.rateDictionary(id, body.stars, uid);
+    return this.dictionaryService.rateDictionary(id, body.stars, userId);
   }
 }

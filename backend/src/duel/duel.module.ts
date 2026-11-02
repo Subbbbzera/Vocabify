@@ -6,9 +6,13 @@ import { User } from '../user/entities/user.entity';
 import { DuelResult } from './entities/duel-result.entity';
 import { Dictionary } from '../dictionary/entities/dictionary.entity';
 import { Word } from '../word/entities/word.entity';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, DuelResult, Dictionary, Word])],
-  providers: [DuelService, DuelGateway]
+  imports: [
+    TypeOrmModule.forFeature([User, DuelResult, Dictionary, Word]),
+    AuthModule,
+  ],
+  providers: [DuelService, DuelGateway],
 })
 export class DuelModule {}

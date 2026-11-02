@@ -66,13 +66,12 @@ function Account() {
   }, [location.state])
 
   const [showResetModal, setShowResetModal] = useState(false)
-  const [resetData, setResetData] = useState({ email: '', newPassword: '' })
+  const [resetData, setResetData] = useState({ email: '', currentPassword: '', newPassword: '' })
   const [resetSuccess, setResetSuccess] = useState('')
   const [resetLoading, setResetLoading] = useState(false)
 
   const [showEditName, setShowEditName] = useState(false)
   const [showEditPass, setShowEditPass] = useState(false)
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
 
   const [notifSettings, setNotifSettings] = useState(getNotificationSettings)
 
@@ -129,9 +128,8 @@ function Account() {
 
     try {
       const data = await api.post<{ user: User; token: string }>(endpoint, payload);
-      const userWithPassword = { ...data.user, password: cleanPassword };
-      setSession(userWithPassword, data.token);
-      setUser(userWithPassword);
+      setSession(data.user, data.token);
+      setUser(data.user);
       setShowAuthModal(false);
       api.get<Stats>('/dictionaries/stats')
         .then((statsData) => setStats(statsData))
@@ -151,16 +149,17 @@ function Account() {
     setResetLoading(true);
 
     const cleanEmail = (resetData.email || '').trim().toLowerCase();
+    const cleanCurrentPassword = (resetData.currentPassword || '').trim();
     const cleanPassword = (resetData.newPassword || '').trim();
 
     try {
       const data = await api.post<{ user: User; token: string; message: string }>('/auth/reset-password', {
         email: cleanEmail,
+        currentPassword: cleanCurrentPassword,
         newPassword: cleanPassword,
       });
-      const userWithPassword = { ...data.user, password: cleanPassword };
-      setSession(userWithPassword, data.token);
-      setUser(userWithPassword);
+      setSession(data.user, data.token);
+      setUser(data.user);
       setResetSuccess('Password updated successfully! Logging in...');
       setTimeout(() => {
         setShowResetModal(false);
@@ -168,7 +167,7 @@ function Account() {
         setResetSuccess('');
       }, 1000);
     } catch (err: any) {
-      setError(err.message || 'Failed to reset password. Please verify your email.');
+      setError(err.message || 'Failed to reset password. Please verify your credentials.');
     } finally {
       setResetLoading(false);
     }
@@ -183,19 +182,28 @@ function Account() {
     if (!user) return false;
 
     const updatePayload: any = {};
-    if (showEditName) updatePayload.name = data.field1;
-    if (showEditPass) updatePayload.password = data.field1;
+    if (showEditName) {
+      updatePayload.name = data.field1;
+    }
+    if (showEditPass) {
+      if (data.field2.trim().length < 6) {
+        return 'New password must be at least 6 characters';
+      }
+      updatePayload.currentPassword = data.field1;
+      updatePayload.password = data.field2;
+    }
 
     api.patch<User>('/auth/profile', updatePayload)
       .then((updatedUser) => {
-        const newPassword = showEditPass ? data.field1 : (user as any).password;
-        const userWithPassword = { ...updatedUser, password: newPassword };
-        setSession(userWithPassword, localStorage.getItem('token') || '');
-        setUser(userWithPassword);
+        setSession(updatedUser, localStorage.getItem('token') || '');
+        setUser(updatedUser);
         setShowEditName(false);
         setShowEditPass(false);
       })
-      .catch((err) => console.error('Failed to update profile:', err));
+      .catch((err) => {
+        console.error('Failed to update profile:', err);
+        alert(err.message || 'Failed to update profile');
+      });
 
     return true;
   }
@@ -242,9 +250,8 @@ function Account() {
       setIsUploadingAvatar(true)
       const compressed = await compressImage(file)
       const updatedUser = await api.patch<User>('/auth/profile', { avatarUrl: compressed })
-      const userWithPassword = { ...updatedUser, password: (user as any).password }
-      setSession(userWithPassword, localStorage.getItem('token') || '')
-      setUser(userWithPassword)
+      setSession(updatedUser, localStorage.getItem('token') || '')
+      setUser(updatedUser)
     } catch (err: any) {
       console.error('Failed to upload avatar:', err)
       alert(err.message || 'Failed to upload photo')
@@ -259,9 +266,8 @@ function Account() {
     try {
       setIsUploadingAvatar(true)
       const updatedUser = await api.patch<User>('/auth/profile', { avatarUrl: '' })
-      const userWithPassword = { ...updatedUser, password: (user as any).password }
-      setSession(userWithPassword, localStorage.getItem('token') || '')
-      setUser(userWithPassword)
+      setSession(updatedUser, localStorage.getItem('token') || '')
+      setUser(updatedUser)
     } catch (err: any) {
       console.error('Failed to remove avatar:', err)
       alert(err.message || 'Failed to remove photo')
@@ -475,12 +481,12 @@ function Account() {
                         type="button"
                         onClick={() => {
                           setError('');
-                          setResetData({ email: authData.email || '', newPassword: '' });
+                          setResetData({ email: authData.email || '', currentPassword: '', newPassword: '' });
                           setShowResetModal(true);
                         }}
                         className='text-[11px] text-blue-400 hover:text-blue-300 self-end mt-0.5 transition-colors font-medium'
                       >
-                        Forgot / Reset password?
+                        Change password?
                       </button>
                     )}
                   </div>
@@ -522,10 +528,10 @@ function Account() {
               <div className='bg-slate-800 rounded-xl p-6 sm:p-8 w-[90%] max-w-md border border-slate-700 space-y-4' onClick={e => e.stopPropagation()}>
                 <div className='flex items-center gap-2 border-b border-slate-700 pb-3'>
                   <FaKey className='text-blue-400' size={16} />
-                  <h3 className='text-lg font-bold text-white uppercase tracking-tight'>Reset Password</h3>
+                  <h3 className='text-lg font-bold text-white uppercase tracking-tight'>Change Password</h3>
                 </div>
                 <p className='text-xs text-slate-400 leading-relaxed text-left'>
-                  Enter your registered email address and set a new password for your account.
+                  Enter your registered email address, current password, and a new password for your account.
                 </p>
                 <form onSubmit={handleResetPassword} className='flex flex-col gap-3.5 text-left'>
                   <div className='flex flex-col gap-1'>
@@ -540,6 +546,19 @@ function Account() {
                       spellCheck="false"
                       className='px-3.5 py-2.5 text-sm bg-slate-700 rounded-lg w-full text-white outline-none focus:ring-2 focus:ring-blue-500 border border-slate-600'
                       placeholder='hello@example.com'
+                    />
+                  </div>
+                  <div className='flex flex-col gap-1'>
+                    <label className='text-xs font-semibold text-slate-300'>Current Password</label>
+                    <input
+                      type="password"
+                      required
+                      value={resetData.currentPassword}
+                      onChange={e => setResetData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      className='px-3.5 py-2.5 text-sm bg-slate-700 rounded-lg w-full text-white outline-none focus:ring-2 focus:ring-blue-500 border border-slate-600'
+                      placeholder='Enter current password'
                     />
                   </div>
                   <div className='flex flex-col gap-1'>
@@ -706,17 +725,9 @@ function Account() {
                       <FaLock size={11} />
                       <span>Password</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className='text-slate-400 hover:text-white transition-colors p-1'
-                      title="Peek Password"
-                    >
-                      {showCurrentPassword ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
-                    </button>
                   </div>
                   <div className='text-sm font-mono text-white tracking-wider'>
-                    {showCurrentPassword ? ((user as any).password || '••••••••') : '••••••••'}
+                    ••••••••
                   </div>
                 </div>
 
@@ -1072,12 +1083,13 @@ function Account() {
       {showEditPass && (
         <Modal
           name="Change Password"
-          input1="New Password"
+          input1="Current Password"
+          input2="New Password"
           placeholder1="••••••••"
           buttonText="Update"
           onClose={() => setShowEditPass(false)}
           onCreate={handleUpdateProfile}
-          input2Type="hidden"
+          input2Type="input"
         />
       )}
     </div>

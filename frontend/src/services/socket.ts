@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { getToken, getSessionUser } from './api';
+import { getToken } from './api';
 
 let socket: Socket | null = null;
 
@@ -19,10 +19,8 @@ export function getSocket(): Socket | null {
   return socket;
 }
 
-export function initSocket(customUserId?: number, customToken?: string): Socket {
+export function initSocket(_customUserId?: number, customToken?: string): Socket {
   const token = customToken || getToken() || '';
-  const user = getSessionUser();
-  const userId = customUserId || user?.id;
 
   if (socket && socket.connected) {
     return socket;
@@ -36,10 +34,6 @@ export function initSocket(customUserId?: number, customToken?: string): Socket 
     transports: ['websocket', 'polling'],
     auth: {
       token,
-      userId,
-    },
-    query: {
-      userId: String(userId || ''),
     },
     reconnection: true,
     reconnectionAttempts: 10,

@@ -1,4 +1,4 @@
-import { getBackendUrl } from '../services/api'
+import { api } from '../services/api'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaXmark, FaVolumeHigh, FaRotateLeft } from 'react-icons/fa6';
@@ -53,20 +53,10 @@ function Practice() {
   const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef(0);
 
-  const getUserId = () => {
-    const saved = localStorage.getItem('sessionUser');
-    if (saved) return JSON.parse(saved).id;
-    return null;
-  };
-
   // If no ID is passed in params, fetch user's dictionaries
   useEffect(() => {
     if (!id) {
-      const userId = getUserId();
-      fetch(getBackendUrl("/dictionary/Getdictionary"), {
-        headers: { "user-id": userId?.toString() || "" }
-      })
-        .then(res => res.json())
+      api.get<any[]>("/dictionary/Getdictionary")
         .then(data => {
           if (Array.isArray(data) && data.length > 0) {
             setDictionaries(data);
@@ -84,11 +74,7 @@ function Practice() {
   const fetchWords = useCallback(() => {
     if (!activeDictId) return;
     setLoading(true);
-    const userId = getUserId();
-    fetch(getBackendUrl(`/word/getWord/${activeDictId}`), {
-      headers: { "user-id": userId?.toString() || "" }
-    })
-      .then(res => res.json())
+    api.get<Record<string, AllWord[]>>(`/word/getWord/${activeDictId}`)
       .then(data => {
         const flat: AllWord[] = Object.values(data).flat() as AllWord[];
         setAllFetchedWords(flat);
@@ -283,20 +269,14 @@ function Practice() {
     setIsSetupOpen(false);
     setCurrentIndex(0);
 
-    const userId = getUserId();
-    if (userId) {
-      fetch(getBackendUrl("/auth/record-practice"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId })
-      })
-      .then(res => res.json())
+    api.post("/auth/record-practice")
       .then(updatedUser => {
-        localStorage.setItem('sessionUser', JSON.stringify(updatedUser));
-        window.dispatchEvent(new Event('storage'));
+        if (updatedUser) {
+          localStorage.setItem('sessionUser', JSON.stringify(updatedUser));
+          window.dispatchEvent(new Event('storage'));
+        }
       })
       .catch(err => console.error("Error recording practice:", err));
-    }
   };
 
   const currentWord = words[currentIndex];
@@ -315,7 +295,6 @@ function Practice() {
   }, []);
 
   const markAsLearned = async (word: AllWord) => {
-    const userId = getUserId();
     let nextInterval = 3;
     if (word.remembered && word.interval) {
       if (word.interval === 3) nextInterval = 7;
@@ -327,13 +306,10 @@ function Practice() {
     nextDate.setDate(nextDate.getDate() + nextInterval);
 
     try {
-      await fetch(getBackendUrl(`/word/update/${word.id}`), {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "user-id": userId?.toString() || ""
-        },
-        body: JSON.stringify({ remembered: true, interval: nextInterval, nextReviewDate: nextDate.toISOString() })
+      await api.patch(`/word/update/${word.id}`, {
+        remembered: true,
+        interval: nextInterval,
+        nextReviewDate: nextDate.toISOString(),
       });
     } catch (error) {
       console.error('Error updating word:', error);
@@ -341,15 +317,11 @@ function Practice() {
   };
 
   const markAsForgotten = async (word: AllWord) => {
-    const userId = getUserId();
     try {
-      await fetch(getBackendUrl(`/word/update/${word.id}`), {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "user-id": userId?.toString() || ""
-        },
-        body: JSON.stringify({ remembered: false, interval: 0, nextReviewDate: null })
+      await api.patch(`/word/update/${word.id}`, {
+        remembered: false,
+        interval: 0,
+        nextReviewDate: null,
       });
     } catch (error) {
       console.error('Error updating word:', error);

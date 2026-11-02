@@ -44,7 +44,12 @@ export const getToken = (): string | null => {
 
 export const setSession = (user: any, token: string) => {
   localStorage.setItem('token', token);
-  localStorage.setItem('sessionUser', JSON.stringify(user));
+  if (user && typeof user === 'object') {
+    const { password: _, ...safeUser } = user;
+    localStorage.setItem('sessionUser', JSON.stringify(safeUser));
+  } else {
+    localStorage.setItem('sessionUser', JSON.stringify(user));
+  }
   window.dispatchEvent(new Event('storage'));
 };
 

@@ -82,19 +82,30 @@ export class AuthService {
 
   async resetPassword(dto: ResetPasswordDto) {
     const cleanEmail = (dto.email || '').trim().toLowerCase();
+    const rawCurrentPassword = dto.currentPassword || '';
+    const cleanCurrentPassword = rawCurrentPassword.trim();
+
     const user = await this.userRepo
       .createQueryBuilder('user')
       .where('LOWER(TRIM(user.email)) = LOWER(:email)', { email: cleanEmail })
       .getOne();
 
     if (!user) {
-      throw new NotFoundException('User with this email not found');
+      throw new UnauthorizedException('Invalid email or current password');
+    }
+
+    let isMatch = await bcrypt.compare(rawCurrentPassword, user.password);
+    if (!isMatch && cleanCurrentPassword !== rawCurrentPassword) {
+      isMatch = await bcrypt.compare(cleanCurrentPassword, user.password);
+    }
+
+    if (!isMatch) {
+      throw new UnauthorizedException('Invalid email or current password');
     }
 
     user.password = await bcrypt.hash(dto.newPassword.trim(), 10);
     await this.userRepo.save(user);
 
-    console.log(`[AuthService.resetPassword] Password reset successfully for user ID: ${user.id} (${cleanEmail})`);
     const { password: _, ...result } = user;
     const token = this.generateToken(user);
     return { user: result, token, message: 'Password updated successfully' };
@@ -135,7 +146,14 @@ export class AuthService {
       user.name = dto.name;
     }
     if (dto.password) {
-      user.password = await bcrypt.hash(dto.password, 10);
+      if (!dto.currentPassword) {
+        throw new UnauthorizedException('Current password is required to set a new password');
+      }
+      const isMatch = await bcrypt.compare(dto.currentPassword, user.password);
+      if (!isMatch) {
+        throw new UnauthorizedException('Current password is incorrect');
+      }
+      user.password = await bcrypt.hash(dto.password.trim(), 10);
     }
     if (dto.avatarUrl !== undefined) {
       user.avatarUrl = dto.avatarUrl;

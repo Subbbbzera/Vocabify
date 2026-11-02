@@ -47,18 +47,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         try {
           const payload = this.jwtService.verify(rawToken);
           if (payload?.sub || payload?.id) {
-            userId = payload.sub || payload.id;
+            userId = Number(payload.sub || payload.id);
           }
         } catch {
-
-        }
-      }
-
-      if (!userId) {
-        const rawId = client.handshake.auth?.userId || client.handshake.query?.userId;
-        if (rawId) {
-          const parsed = parseInt(String(rawId), 10);
-          if (!isNaN(parsed)) userId = parsed;
+          userId = null;
         }
       }
 
