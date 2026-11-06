@@ -12,7 +12,14 @@ import {
 } from '@nestjs/common';
 
 import { DictionaryService } from './dictionary.service';
-import { DictionaryDto, ImportDictionaryDto } from './dto/dictionary.dto';
+import {
+  DictionaryDto,
+  DictionaryIdDto,
+  ImportDictionaryDto,
+  RateDictionaryDto,
+  UpdateDictionaryByBodyDto,
+  UpdateDictionaryDto,
+} from './dto/dictionary.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -62,17 +69,17 @@ export class DictionaryController {
 
   @Post('update')
   updateByPost(
-    @Body() body: any,
+    @Body() body: UpdateDictionaryByBodyDto,
     @CurrentUser('id') userId: number,
   ) {
     const { id, ...dto } = body;
-    return this.dictionaryService.updateDictionary(Number(id), dto, userId);
+    return this.dictionaryService.updateDictionary(id, dto, userId);
   }
 
   @Patch([':id', 'update/:id'])
   updateDictionary(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: Partial<DictionaryDto>,
+    @Body() dto: UpdateDictionaryDto,
     @CurrentUser('id') userId: number,
   ) {
     return this.dictionaryService.updateDictionary(id, dto, userId);
@@ -80,10 +87,10 @@ export class DictionaryController {
 
   @Post('delete')
   deleteByPost(
-    @Body() body: { id: number },
+    @Body() body: DictionaryIdDto,
     @CurrentUser('id') userId: number,
   ) {
-    return this.dictionaryService.deleteDictionary(Number(body.id), userId);
+    return this.dictionaryService.deleteDictionary(body.id, userId);
   }
 
   @Delete([':id', 'delete/:id'])
@@ -96,10 +103,10 @@ export class DictionaryController {
 
   @Post('copy')
   copyByPost(
-    @Body() body: { id: number },
+    @Body() body: DictionaryIdDto,
     @CurrentUser('id') userId: number,
   ) {
-    return this.dictionaryService.copyDictionary(Number(body.id), userId);
+    return this.dictionaryService.copyDictionary(body.id, userId);
   }
 
   @Post([':id/copy', 'copy/:id'])
@@ -156,7 +163,7 @@ export class DictionaryController {
   @Post(':id/rate')
   rateDictionary(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { stars: number },
+    @Body() body: RateDictionaryDto,
     @CurrentUser('id') userId: number,
   ) {
     return this.dictionaryService.rateDictionary(id, body.stars, userId);

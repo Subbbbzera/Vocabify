@@ -56,13 +56,14 @@ describe('WordService', () => {
 
   describe('getWord', () => {
     it('should group words by the first uppercase letter', async () => {
+      dictRepo.findOne.mockResolvedValue({ dictionaryId: 10, user: { id: 1 } });
       wordRepo.find.mockResolvedValue([
         { id: 1, text: 'apple' },
         { id: 2, text: 'avocado' },
         { id: 3, text: 'banana' },
       ]);
 
-      const result = await service.getWord(10);
+      const result = await service.getWord(10, 1);
 
       expect(wordRepo.find).toHaveBeenCalledWith({
         where: { dictionaryId: 10 },
@@ -72,6 +73,12 @@ describe('WordService', () => {
       expect(result).toHaveProperty('B');
       expect(result['A']).toHaveLength(2);
       expect(result['B']).toHaveLength(1);
+    });
+
+    it('should throw ForbiddenException if user cannot access dictionary', async () => {
+      dictRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.getWord(10, 2)).rejects.toThrow(ForbiddenException);
     });
 
     it('should place words with empty text under "#" key', async () => {
@@ -91,21 +98,39 @@ describe('WordService', () => {
         service.saveWord({
           dictionaryId: 99,
           text: 'hello',
-          translation: 'привіт',
+          translate: 'привіт',
         } as any),
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should create and save word if dictionary exists', async () => {
-      const mockDict = { dictionaryId: 1, title: 'English' };
-      const dto = { dictionaryId: 1, text: 'cat', translation: 'кіт' };
+    it('should throw ForbiddenException if dictionary belongs to another user', async () => {
+      dictRepo.findOne.mockResolvedValue({
+        dictionaryId: 1,
+        user: { id: 2 },
+      });
+
+      await expect(
+        service.saveWord(
+          {
+            dictionaryId: 1,
+            text: 'hello',
+            translate: 'привіт',
+          } as any,
+          1,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should create and save word if dictionary exists and user is owner', async () => {
+      const mockDict = { dictionaryId: 1, title: 'English', user: { id: 1 } };
+      const dto = { dictionaryId: 1, text: 'cat', translate: 'кіт' };
       const mockCreated = { id: 10, ...dto };
 
       dictRepo.findOne.mockResolvedValue(mockDict);
       wordRepo.create.mockReturnValue(mockCreated);
       wordRepo.save.mockResolvedValue(mockCreated);
 
-      const result = await service.saveWord(dto as any);
+      const result = await service.saveWord(dto as any, 1);
 
       expect(dictRepo.findOne).toHaveBeenCalledWith({
         where: { dictionaryId: 1 },

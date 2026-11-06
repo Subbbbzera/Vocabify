@@ -9,7 +9,7 @@ import {
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
-import { CreateWordDto, UpdateWordDto } from './dto/word.dto';
+import { CreateWordDto, UpdateWordDto, WordExampleDto } from './dto/word.dto';
 import { WordService } from './word.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -144,20 +144,20 @@ export class WordController {
   @Post([':id/examples', 'addExample/:id'])
   addExample(
     @Param('id', ParseIntPipe) id: number,
-    @Body('example') example: any,
+    @Body() body: WordExampleDto,
     @CurrentUser('id') userId: number,
   ) {
-    return this.wordService.addExample(id, example, userId);
+    return this.wordService.addExample(id, body.example, userId);
   }
 
   @Patch([':id/examples/:index', 'updateExample/:id/:index'])
   updateExample(
     @Param('id', ParseIntPipe) id: number,
     @Param('index', ParseIntPipe) index: number,
-    @Body('example') example: any,
+    @Body() body: WordExampleDto,
     @CurrentUser('id') userId: number,
   ) {
-    return this.wordService.updateExample(id, index, example, userId);
+    return this.wordService.updateExample(id, index, body.example, userId);
   }
 
   @Delete([':id/examples/:index', 'deleteExample/:id/:index'])

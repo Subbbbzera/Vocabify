@@ -15,7 +15,11 @@ export class WordService {
     private readonly dictRepo: Repository<Dictionary>,
   ) {}
 
-  private async verifyWordOwnership(wordId: number, userId?: number): Promise<Word> {
+  private async verifyWordOwnership(
+    wordId: number,
+    userId?: number,
+    allowPublicRead = false,
+  ): Promise<Word> {
     const word = await this.wordRepo.findOne({
       where: { id: wordId },
       relations: ['dictionary', 'dictionary.user'],
@@ -25,7 +29,10 @@ export class WordService {
       throw new NotFoundException(`Word with ID ${wordId} not found`);
     }
 
-    if (userId && word.dictionary?.user?.id && word.dictionary.user.id !== userId) {
+    const isOwner = !userId || !word.dictionary?.user?.id || word.dictionary.user.id === userId;
+    const isPublicAllowed = allowPublicRead && word.dictionary?.isPublic === true;
+
+    if (!isOwner && !isPublicAllowed) {
       throw new ForbiddenException('You do not have access to this word');
     }
 
@@ -33,6 +40,19 @@ export class WordService {
   }
 
   async getWord(dictionaryId: number, userId?: number) {
+    if (userId) {
+      const dictionary = await this.dictRepo.findOne({
+        where: [
+          { dictionaryId, user: { id: userId } },
+          { dictionaryId, isPublic: true },
+        ],
+      });
+
+      if (!dictionary) {
+        throw new ForbiddenException('Dictionary not found or access denied');
+      }
+    }
+
     const words = await this.wordRepo.find({
       where: { dictionaryId },
       order: { text: 'ASC' },
@@ -55,7 +75,7 @@ export class WordService {
       relations: ['user'],
     });
 
-    if (!dictionary) {
+    if (!dictionary || (userId && dictionary.user?.id && dictionary.user.id !== userId)) {
       throw new ForbiddenException('Dictionary not found or access denied');
     }
 
@@ -66,10 +86,11 @@ export class WordService {
   }
 
   async getWordById(id: number, userId: number) {
-    const word = await this.verifyWordOwnership(id, userId);
+    const word = await this.verifyWordOwnership(id, userId, true);
+    const { dictionary, ...wordData } = word;
     return {
-      ...word,
-      language: word.dictionary?.language,
+      ...wordData,
+      language: dictionary?.language,
     };
   }
 
@@ -85,7 +106,7 @@ export class WordService {
     return { message: 'Word deleted successfully', id };
   }
 
-  async addExample(id: number, example: any, userId: number) {
+  async addExample(id: number, example: string, userId: number) {
     const word = await this.verifyWordOwnership(id, userId);
     const examples = word.examples || [];
     examples.push(example);
@@ -93,9 +114,9 @@ export class WordService {
     return this.wordRepo.save(word);
   }
 
-  async updateExample(id: number, index: number, example: any, userId: number) {
+  async updateExample(id: number, index: number, example: string, userId: number) {
     const word = await this.verifyWordOwnership(id, userId);
-    if (word.examples && word.examples.length > index) {
+    if (word.examples && index >= 0 && word.examples.length > index) {
       word.examples[index] = example;
       return this.wordRepo.save(word);
     }
@@ -104,7 +125,7 @@ export class WordService {
 
   async deleteExample(id: number, index: number, userId: number) {
     const word = await this.verifyWordOwnership(id, userId);
-    if (word.examples && word.examples.length > index) {
+    if (word.examples && index >= 0 && word.examples.length > index) {
       word.examples.splice(index, 1);
       return this.wordRepo.save(word);
     }
