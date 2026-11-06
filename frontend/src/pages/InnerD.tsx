@@ -39,8 +39,9 @@ function InnerD() {
           text: word.text,
           translate: word.translate,
           extraForms: word.extraForms || [],
-          dictionaryId: word.dictionaryId,
-          remembered: false
+          remembered: false,
+          interval: 0,
+          nextReviewDate: null
         })
       ));
 

@@ -6,8 +6,10 @@ interface ModalProp {
 
   name : string
   input1 : string
+  input1Type? : string
   input2? : string
   input2Type? : string
+  placeholder2? : string
 
   placeholder1 : string
 
@@ -61,7 +63,7 @@ interface ModalProp {
 }
 
 function Modal({
-  name, input1, input2, placeholder1, input2Type = "input", buttonText, onClose, onCreate, onDelete, onCopy,
+  name, input1, input1Type = "text", input2, placeholder1, placeholder2, input2Type = "input", buttonText, onClose, onCreate, onDelete, onCopy,
   onExportFile,
   defaultValue1, defaultValue2, defaultTranscription, defaultPartOfSpeech, defaultExtraFields, defaultRemembered, showAddMore,
   isDictionary, defaultSettings
@@ -298,7 +300,7 @@ const Toggle = ({label, value, onChange}: {label: string, value: boolean, onChan
                 />
               ) : (
                 <input
-                  type="text" value={fields.field1} onChange={e => { setFields(prev => ({...prev, field1: e.target.value})); setValidationError(""); }}
+                  type={input1Type} value={fields.field1} onChange={e => { setFields(prev => ({...prev, field1: e.target.value})); setValidationError(""); }}
                   placeholder={placeholder1} required minLength={1}
                   className='px-3 py-2 sm:px-4 sm:py-2 text-base bg-slate-700 rounded-lg w-full text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all'
                 />
@@ -403,9 +405,11 @@ const Toggle = ({label, value, onChange}: {label: string, value: boolean, onChan
                   <option value="spanish">Spanish</option>
                   <option value="french">French</option>
                 </select>
-              ) : input2Type.trim().toLowerCase() === "input" ? (
+              ) : input2Type.trim().toLowerCase() === "input" || input2Type.trim().toLowerCase() === "password" ? (
                 <input
-                  type="text" value={fields.field2} onChange={e => { setFields(prev => ({...prev, field2: e.target.value})); setValidationError(""); }}
+                  type={input2Type.trim().toLowerCase() === "password" ? "password" : "text"}
+                  placeholder={placeholder2}
+                  value={fields.field2} onChange={e => { setFields(prev => ({...prev, field2: e.target.value})); setValidationError(""); }}
                   required minLength={1}
                   className='px-3 py-2 sm:px-4 sm:py-2 text-sm bg-slate-700 rounded-lg w-full text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all'
                 />

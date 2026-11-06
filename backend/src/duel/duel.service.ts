@@ -302,8 +302,13 @@ export class DuelService {
     }
     this.processedRooms.add(roomId);
 
-    let winnerId: number | null = null;
-    let loserId: number | null = null;
+    if (p1.score === p2.score) {
+      // Draw: do not record a fake winner/loser or reset win streaks
+      return;
+    }
+
+    let winnerId: number;
+    let loserId: number;
     let winnerScore = 0;
     let loserScore = 0;
 
@@ -312,16 +317,11 @@ export class DuelService {
       loserId = p2.id;
       winnerScore = p1.score;
       loserScore = p2.score;
-    } else if (p2.score > p1.score) {
+    } else {
       winnerId = p2.id;
       loserId = p1.id;
       winnerScore = p2.score;
       loserScore = p1.score;
-    } else {
-      winnerId = p1.id;
-      loserId = p2.id;
-      winnerScore = p1.score;
-      loserScore = p2.score;
     }
 
     const result = this.duelResultRepo.create({

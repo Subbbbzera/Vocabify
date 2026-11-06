@@ -95,13 +95,15 @@ export class DuelGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         this.logger.log(`[DUEL] Match created: ${roomId}, rounds: ${rounds.length}`);
 
+        const sanitizedRounds = rounds.map(({ correctOption: _, ...round }) => round);
+
         this.server.to(roomId).emit('match_found', {
           roomId,
           players: [
             { userId: player1.userId, username: player1.username, winrate: player1.winrate },
             { userId: player2.userId, username: player2.username, winrate: player2.winrate },
           ],
-          rounds,
+          rounds: sanitizedRounds,
         });
       } catch (error) {
         this.logger.error(`[DUEL] Match error: ${error}`);
@@ -143,6 +145,7 @@ export class DuelGateway implements OnGatewayConnection, OnGatewayDisconnect {
       pointsEarned: result.pointsEarned,
       totalScore: result.totalScore,
       isCorrect: result.isCorrect,
+      correctOption: result.correctOption,
     });
 
     client.to(data.roomId).emit('opponent_scored', {

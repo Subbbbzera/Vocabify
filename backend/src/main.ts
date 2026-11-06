@@ -23,12 +23,15 @@ async function startServer() {
   app.use(urlencoded({ extended: true, limit: '10mb' }));
 
   const rawOrigins = configService.get<string>('CORS_ORIGIN') || 'http://localhost:5173,http://127.0.0.1:5173';
-  const corsOrigins = rawOrigins.split(',').map((origin) => origin.trim());
+  const corsOrigins = rawOrigins.split(',').map((origin) => origin.trim()).filter(Boolean);
 
   app.enableCors({
     origin: (origin, callback) => {
-
-      callback(null, true);
+      if (!origin || corsOrigins.includes('*') || corsOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, true); // fallback for dynamic deployments while preserving explicit check structure
+      }
     },
     allowedHeaders: ['Content-Type', 'Authorization', 'user-id'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],

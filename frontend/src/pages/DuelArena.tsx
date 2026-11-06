@@ -36,6 +36,7 @@ export default function DuelArena() {
   const [opponentScore, setOpponentScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(8000);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [revealedCorrectOption, setRevealedCorrectOption] = useState<string | null>(null);
   const [roundStatus, setRoundStatus] = useState<'playing' | 'revealed'>('playing');
 
   const timerRef = useRef<any>(null);
@@ -75,8 +76,11 @@ export default function DuelArena() {
       duelSocket.emit('rejoin_duel', { roomId });
     });
 
-    duelSocket.on('answer_result', (data: { roundIndex: number; pointsEarned: number; totalScore: number; isCorrect: boolean }) => {
+    duelSocket.on('answer_result', (data: { roundIndex: number; pointsEarned: number; totalScore: number; isCorrect: boolean; correctOption?: string }) => {
       setMyScore(data.totalScore);
+      if (data.correctOption) {
+        setRevealedCorrectOption(data.correctOption);
+      }
       if (data.isCorrect) {
         playNotificationSound();
       }
@@ -155,6 +159,7 @@ export default function DuelArena() {
     setTimeout(() => {
       if (currentRound < rounds.length - 1) {
         setSelectedOption(null);
+        setRevealedCorrectOption(null);
         setRoundStatus('playing');
         setCurrentRound(prev => prev + 1);
       } else {
@@ -344,7 +349,8 @@ export default function DuelArena() {
           let btnClass = 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750 hover:border-slate-600';
 
           if (roundStatus === 'revealed') {
-            if (opt === currentWord.correctOption) {
+            const correctOpt = revealedCorrectOption ?? currentWord.correctOption;
+            if (opt === correctOpt) {
               btnClass = 'bg-emerald-500/15 border-emerald-500 text-emerald-400 scale-[1.02]';
             } else if (opt === selectedOption) {
               btnClass = 'bg-rose-500/15 border-rose-500 text-rose-400 line-through opacity-60';

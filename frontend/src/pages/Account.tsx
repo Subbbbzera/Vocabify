@@ -1084,12 +1084,14 @@ function Account() {
         <Modal
           name="Change Password"
           input1="Current Password"
+          input1Type="password"
           input2="New Password"
+          input2Type="password"
           placeholder1="••••••••"
+          placeholder2="••••••••"
           buttonText="Update"
           onClose={() => setShowEditPass(false)}
           onCreate={handleUpdateProfile}
-          input2Type="input"
         />
       )}
     </div>
