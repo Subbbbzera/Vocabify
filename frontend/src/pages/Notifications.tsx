@@ -153,7 +153,12 @@ function Notifications() {
       })
     }
 
-    if (settings.spacedRepetition && canShowPeriodicNotification('repetition') && practiceDict && (practiceDict.amountWord - (practiceDict.rememberedWords || 0) > 0)) {
+    const shouldShowRepetition =
+      settings.spacedRepetition &&
+      canShowPeriodicNotification('repetition') &&
+      Boolean(practiceDict && practiceDict.amountWord - (practiceDict.rememberedWords || 0) > 0);
+
+    if (shouldShowRepetition && practiceDict) {
       generatedNotifications.push({
         id: 'notif-spaced-repetition',
         title: 'Time to refresh your memory (Spaced Repetition)',
@@ -165,10 +170,15 @@ function Notifications() {
         actionText: 'Review Words',
         actionLink: `/practice/${practiceDict.dictionaryId}`,
       })
-      recordPeriodicNotificationShown('repetition')
     }
 
-    if (settings.dailyHabits && !practicedToday && canShowPeriodicNotification('habit') && currentHour < 23) {
+    const shouldShowHabit =
+      settings.dailyHabits &&
+      !practicedToday &&
+      canShowPeriodicNotification('habit') &&
+      currentHour < 23;
+
+    if (shouldShowHabit) {
       generatedNotifications.push({
         id: 'notif-daily-habit',
         title: isMorning ? 'Morning Warm-up' : 'Evening Recap',
@@ -182,9 +192,18 @@ function Notifications() {
         actionText: practiceDict ? 'Start Practice' : 'Open Dictionaries',
         actionLink: practiceDict ? `/practice/${practiceDict.dictionaryId}` : '/mainDictionary',
       })
-      recordPeriodicNotificationShown('habit')
     }
   }
+
+  useEffect(() => {
+    if (!settings.enabled) return
+    if (generatedNotifications.some(n => n.id === 'notif-spaced-repetition')) {
+      recordPeriodicNotificationShown('repetition')
+    }
+    if (generatedNotifications.some(n => n.id === 'notif-daily-habit')) {
+      recordPeriodicNotificationShown('habit')
+    }
+  }, [settings.enabled, generatedNotifications.length])
 
   const visibleNotifications = generatedNotifications.filter(n => !dismissedIds.includes(n.id))
 

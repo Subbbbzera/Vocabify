@@ -240,15 +240,18 @@ export class DuelService {
       throw new Error('Not enough words in selected dictionaries');
     }
 
-    const mastered = words.filter((w) => w.remembered === true);
-    const learning = words.filter((w) => w.remembered === false && w.interval > 0);
-    const newWords = words.filter((w) => w.remembered === false && w.interval === 0);
+    const shuffle = <T>(array: T[]): T[] => {
+      const result = [...array];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    };
 
-    const shuffle = (array: any[]) => array.sort(() => 0.5 - Math.random());
-
-    shuffle(mastered);
-    shuffle(learning);
-    shuffle(newWords);
+    const mastered = shuffle(words.filter((w) => w.remembered === true));
+    const learning = shuffle(words.filter((w) => w.remembered === false && w.interval > 0));
+    const newWords = shuffle(words.filter((w) => w.remembered === false && w.interval === 0));
 
     let selectedWords: Word[] = [];
 
@@ -264,8 +267,7 @@ export class DuelService {
     missing += tryTake(newWords, 3 + missing);
 
     if (selectedWords.length < 10) {
-      const remaining = [...mastered, ...learning, ...newWords];
-      shuffle(remaining);
+      const remaining = shuffle([...mastered, ...learning, ...newWords]);
       tryTake(remaining, 10 - selectedWords.length);
     }
 

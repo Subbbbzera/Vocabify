@@ -7,6 +7,9 @@ import Input from "../components/Input"
 import { FaPlus, FaBars, FaChevronDown, FaGraduationCap, FaArrowUp, FaCopy, FaCheck, FaCubesStacked, FaArrowsSpin } from "react-icons/fa6"
 import { FaSearch, FaStar } from "react-icons/fa"
 import type { AllWord, WordToShow } from "../types"
+import { useWorkerSearch } from "../hooks/useWorkerSearch"
+import { useDictionaryDisplaySettings } from "../hooks/useDictionaryDisplaySettings"
+import { shuffleArray } from "../utils/shuffle"
 
 type FlatItem =
   | { type: 'header', letter: string, isCollapsed: boolean }
@@ -33,18 +36,7 @@ function InnerD() {
     if (!window.confirm("Are you sure you want to reset all words to 'Unlearned'?")) return;
 
     try {
-      const allWordsFlat = Allwords.flatMap(([_, words]) => words);
-      await Promise.all(allWordsFlat.map(word =>
-        api.patch(`/word/update/${word.id}`, {
-          text: word.text,
-          translate: word.translate,
-          extraForms: word.extraForms || [],
-          remembered: false,
-          interval: 0,
-          nextReviewDate: null
-        })
-      ));
-
+      await api.post(`/word/reset-dictionary/${id}`);
       fetchWords();
       setIsMenuOpen(false);
       alert("All words have been reset!");
@@ -80,16 +72,18 @@ function InnerD() {
   const [showScroll, setShowScroll] = useState(false);
   const lastScrollY = useRef(0);
 
-  const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('innerD-fontSize')) || 18);
-
-  const [wordMargin, setWordMargin] = useState(() => Number(localStorage.getItem('innerD-wordMargin')) || 12);
-  const [wordPaddingY, setWordPaddingY] = useState(() => Number(localStorage.getItem('innerD-wordPaddingY')) || 16);
-  const [showStatus, setShowStatus] = useState(() => localStorage.getItem('innerD-showStatus') !== 'false');
-  const [showAlphabet, setShowAlphabet] = useState(() => localStorage.getItem('innerD-showAlphabet') !== 'false');
-
-  useEffect(() => {
-    localStorage.setItem('innerD-showAlphabet', showAlphabet.toString());
-  }, [showAlphabet]);
+  const {
+    fontSize,
+    setFontSize,
+    wordMargin,
+    setWordMargin,
+    wordPaddingY,
+    setWordPaddingY,
+    showStatus,
+    setShowStatus,
+    showAlphabet,
+    setShowAlphabet,
+  } = useDictionaryDisplaySettings();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -121,22 +115,6 @@ function InnerD() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('innerD-fontSize', fontSize.toString());
-  }, [fontSize]);
-
-  useEffect(() => {
-    localStorage.setItem('innerD-wordMargin', wordMargin.toString());
-  }, [wordMargin]);
-
-  useEffect(() => {
-    localStorage.setItem('innerD-wordPaddingY', wordPaddingY.toString());
-  }, [wordPaddingY]);
-
-  useEffect(() => {
-    localStorage.setItem('innerD-showStatus', showStatus.toString());
-  }, [showStatus]);
-
   const [value, setValue] = useState("")
 
   const deferredSearch = useDeferredValue(value)
@@ -146,6 +124,9 @@ function InnerD() {
   const [hideMode, setHideMode] = useState<'none' | 'text' | 'translate'>('none')
   const [collapsedStacks, setCollapsedStacks] = useState<string[]>([])
   const [shuffledStacks, setShuffledStacks] = useState<WordToShow | null>(null)
+
+  const activeWordSource = shuffledStacks || Allwords
+  const filteredWords = useWorkerSearch(activeWordSource, deferredSearch)
 
   const [visibleCount, setVisibleCount] = useState(40)
   const loaderRef = useRef<HTMLDivElement>(null)
@@ -215,22 +196,6 @@ function InnerD() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMenuOpen]);
 
-  const filteredWords = useMemo(() => {
-    const source = shuffledStacks || Allwords;
-    const searchTerm = deferredSearch.trim().toLowerCase();
-
-    if (searchTerm === '') return source;
-
-    return source.map(([letter, words]) => {
-      const matchingWords = words.filter(word =>
-        word.text.toLowerCase().includes(searchTerm) ||
-        word.translate.toLowerCase().includes(searchTerm) ||
-        word.extraForms?.some(f => f.toLowerCase().includes(searchTerm))
-      );
-      return [letter, matchingWords] as [string, AllWord[]];
-    }).filter(([_, words]) => words.length > 0);
-  }, [deferredSearch, Allwords, shuffledStacks]);
-
   const flatItems = useMemo(() => {
     const items: FlatItem[] = [];
     filteredWords.forEach(([letter, words]) => {
@@ -254,6 +219,26 @@ function InnerD() {
     setEditModal(true);
   }, []);
 
+  const validateWord = (text: string, translate: string, excludeId?: number): string | null => {
+    if (text.toLowerCase() === translate.toLowerCase()) {
+      return "Original and translation cannot be the same!";
+    }
+
+    const exists = Allwords.some(([_, words]) =>
+      words.some(w =>
+        w.id !== excludeId &&
+        w.text.trim().toLowerCase() === text.toLowerCase() &&
+        w.translate.trim().toLowerCase() === translate.toLowerCase()
+      )
+    );
+
+    if (exists) {
+      return "This word already exists in your dictionary!";
+    }
+
+    return null;
+  };
+
   const CreateWord = (object : {field1: string, field2: string, transcription?: string, partOfSpeech?: string, extraFields?: string[], remembered?: boolean}) : boolean | string =>{
     const numId = Number(id)
     const wordToSave = {
@@ -265,19 +250,8 @@ function InnerD() {
       remembered: object.remembered || false
     }
 
-    if (wordToSave.text.toLowerCase() === wordToSave.translate.toLowerCase()) {
-      return "Оригінал і переклад не можуть бути однаковими!";
-    }
-
-    const exists = Allwords.some(([_, words]) =>
-      words.some(w =>
-        w.text.trim().toLowerCase() === wordToSave.text.toLowerCase() &&
-        w.translate.trim().toLowerCase() === wordToSave.translate.toLowerCase()
-      )
-    );
-    if (exists) {
-      return "У вас таке слово вже є!";
-    }
+    const validationError = validateWord(wordToSave.text, wordToSave.translate);
+    if (validationError) return validationError;
 
     if(wordToSave.text !== '' && wordToSave.translate !== ''){
       api.post("/word/save", wordToSave)
@@ -294,20 +268,8 @@ function InnerD() {
       translate: object.field2.trim(),
     }
 
-    if (wordToSave.text.toLowerCase() === wordToSave.translate.toLowerCase()) {
-      return "Оригінал і переклад не можуть бути однаковими!";
-    }
-
-    const exists = Allwords.some(([_, words]) =>
-      words.some(w =>
-        w.id !== editingWord.id &&
-        w.text.trim().toLowerCase() === wordToSave.text.toLowerCase() &&
-        w.translate.trim().toLowerCase() === wordToSave.translate.toLowerCase()
-      )
-    );
-    if (exists) {
-      return "У вас таке слово вже є!";
-    }
+    const validationError = validateWord(wordToSave.text, wordToSave.translate, editingWord.id);
+    if (validationError) return validationError;
 
     api.patch(`/word/update/${editingWord.id}`, {
       text: object.field1.trim(),
@@ -332,8 +294,7 @@ function InnerD() {
     if (shuffledStacks && !isFlattened) {
       setShuffledStacks(null);
     } else {
-      const shuffled = [...Allwords].sort(() => Math.random() - 0.5);
-      setShuffledStacks(shuffled);
+      setShuffledStacks(shuffleArray(Allwords));
       setIsFlattened(false);
     }
     setIsMenuOpen(false);
@@ -346,8 +307,7 @@ function InnerD() {
       setIsFlattened(false);
     } else {
       const allWordsFlat: AllWord[] = Allwords.flatMap(entry => entry[1]);
-      const shuffledFlat = allWordsFlat.sort(() => Math.random() - 0.5);
-      setShuffledStacks([['All Words', shuffledFlat]]);
+      setShuffledStacks([['All Words', shuffleArray(allWordsFlat)]]);
       setIsFlattened(true);
     }
     setIsMenuOpen(false);

@@ -4,6 +4,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaXmark, FaVolumeHigh, FaRotateLeft } from 'react-icons/fa6';
 import type { AllWord } from '../types';
 import MatchingMode from '../components/MatchingMode';
+import { shuffleArray } from '../utils/shuffle';
 
 type FilterType = 'due' | 'unlearned' | 'all' | 'learned' | 'custom';
 
@@ -264,7 +265,7 @@ function Practice() {
       return;
     }
 
-    setWords([...filtered].sort(() => Math.random() - 0.5));
+    setWords(shuffleArray(filtered));
     setSessionTotalWords(filtered.length);
     setIsSetupOpen(false);
     setCurrentIndex(0);

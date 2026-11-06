@@ -91,6 +91,14 @@ export class WordController {
     return [];
   }
 
+  @Post('reset-dictionary/:dictionaryId')
+  resetDictionaryWords(
+    @Param('dictionaryId', ParseIntPipe) dictionaryId: number,
+    @CurrentUser('id') userId: number,
+  ) {
+    return this.wordService.resetDictionaryWords(dictionaryId, userId);
+  }
+
   @Get('getWord/:id')
   getWordByDict(
     @Param('id', ParseIntPipe) id: number,

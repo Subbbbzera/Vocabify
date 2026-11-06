@@ -106,6 +106,27 @@ export class WordService {
     return { message: 'Word deleted successfully', id };
   }
 
+  async resetDictionaryWords(dictionaryId: number, userId: number) {
+    const dictionary = await this.dictRepo.findOne({
+      where: { dictionaryId, user: { id: userId } },
+    });
+
+    if (!dictionary) {
+      throw new ForbiddenException('Dictionary not found or access denied');
+    }
+
+    await this.wordRepo.update(
+      { dictionaryId },
+      {
+        remembered: false,
+        interval: 0,
+        nextReviewDate: null,
+      },
+    );
+
+    return { message: 'Dictionary progress reset successfully', dictionaryId };
+  }
+
   async addExample(id: number, example: string, userId: number) {
     const word = await this.verifyWordOwnership(id, userId);
     const examples = word.examples || [];

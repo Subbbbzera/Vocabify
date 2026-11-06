@@ -1,62 +1,106 @@
+import { Suspense, lazy } from 'react'
 import { Route, Routes } from 'react-router-dom'
-import Home from './pages/Home'
 import NavigBar from './components/NavigBar'
 import UserProfile from './components/UserProfile'
-import MainDictionary from './pages/MainDictionary'
-import InnerD from './pages/InnerD'
-import Practice from './pages/Practice'
-import WordDetails from './pages/WordDetails'
-import Account from './pages/Account'
-import Notifications from './pages/Notifications'
-import Friends from './pages/Friends'
 import ProtectedRoute from './components/ProtectedRoute'
-import DuelArena from './pages/DuelArena'
+
+const Home = lazy(() => import('./pages/Home'))
+const MainDictionary = lazy(() => import('./pages/MainDictionary'))
+const InnerD = lazy(() => import('./pages/InnerD'))
+const Practice = lazy(() => import('./pages/Practice'))
+const WordDetails = lazy(() => import('./pages/WordDetails'))
+const Account = lazy(() => import('./pages/Account'))
+const Notifications = lazy(() => import('./pages/Notifications'))
+const Friends = lazy(() => import('./pages/Friends'))
+const DuelArena = lazy(() => import('./pages/DuelArena'))
 
 function App() {
- 
-  
   return (
-  <>
-  
-  <NavigBar/> 
-  <UserProfile/>
-    
-  <Routes>
+    <>
+      <NavigBar />
+      <UserProfile />
 
-    <Route path='/' element={<Home/>}/>
-    <Route path='/account' element={<Account/>}/>
+      <Suspense
+        fallback={
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        }
+      >
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/account" element={<Account />} />
 
-    <Route path='/mainDictionary' element={
-      <ProtectedRoute><MainDictionary/></ProtectedRoute>
-    }/>
-    <Route path='/InnerD/:id' element={
-      <ProtectedRoute><InnerD/></ProtectedRoute>
-    }/>
-    <Route path='/practice' element={
-      <ProtectedRoute><Practice/></ProtectedRoute>
-    }/>
-    <Route path='/practice/:id' element={
-      <ProtectedRoute><Practice/></ProtectedRoute>
-    }/>
-    <Route path='/WordDetails/:id' element={
-      <ProtectedRoute><WordDetails/></ProtectedRoute>
-    }/>
-    <Route path='/notifications' element={
-      <ProtectedRoute><Notifications/></ProtectedRoute>
-    }/>
-    <Route path='/friends' element={
-      <ProtectedRoute><Friends/></ProtectedRoute>
-    }/>
-    <Route path='/duel/:roomId' element={
-      <ProtectedRoute><DuelArena/></ProtectedRoute>
-    }/>
-  </Routes>
-
-
-  </>
-
-)
+          <Route
+            path="/mainDictionary"
+            element={
+              <ProtectedRoute>
+                <MainDictionary />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/InnerD/:id"
+            element={
+              <ProtectedRoute>
+                <InnerD />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/practice"
+            element={
+              <ProtectedRoute>
+                <Practice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/practice/:id"
+            element={
+              <ProtectedRoute>
+                <Practice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/WordDetails/:id"
+            element={
+              <ProtectedRoute>
+                <WordDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/friends"
+            element={
+              <ProtectedRoute>
+                <Friends />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/duel/:roomId"
+            element={
+              <ProtectedRoute>
+                <DuelArena />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Suspense>
+    </>
+  )
 }
 
 export default App
+
 

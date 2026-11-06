@@ -115,33 +115,39 @@ export class DictionaryService {
 
   async importDictionary(data: ImportDictionaryDto, userId: number) {
     const { words, ...dictionaryData } = data;
-    const newDictionary = this.dictionaryRepo.create({
-      ...dictionaryData,
-      isImported: true,
-      user: { id: userId },
+
+    return this.dictionaryRepo.manager.transaction(async (manager) => {
+      const dictRepo = manager.getRepository(Dictionary);
+      const wordRepo = manager.getRepository(Word);
+
+      const newDictionary = dictRepo.create({
+        ...dictionaryData,
+        isImported: true,
+        user: { id: userId },
+      });
+
+      const savedDictionary = await dictRepo.save(newDictionary);
+
+      if (words && words.length > 0) {
+        const wordsToSave = wordRepo.create(
+          words.map((w) => ({
+            text: w.text,
+            translate: w.translate,
+            transcription: w.transcription,
+            partOfSpeech: w.partOfSpeech,
+            extraForms: w.extraForms,
+            examples: w.examples,
+            remembered: w.remembered ?? false,
+            isFavorite: w.isFavorite ?? false,
+            important: w.important ?? false,
+            dictionaryId: savedDictionary.dictionaryId,
+          })),
+        );
+        await wordRepo.save(wordsToSave);
+      }
+
+      return savedDictionary;
     });
-
-    const savedDictionary = await this.dictionaryRepo.save(newDictionary);
-
-    if (words && words.length > 0) {
-      const wordsToSave = this.wordRepo.create(
-        words.map((w) => ({
-          text: w.text,
-          translate: w.translate,
-          transcription: w.transcription,
-          partOfSpeech: w.partOfSpeech,
-          extraForms: w.extraForms,
-          examples: w.examples,
-          remembered: w.remembered ?? false,
-          isFavorite: w.isFavorite ?? false,
-          important: w.important ?? false,
-          dictionaryId: savedDictionary.dictionaryId,
-        })),
-      );
-      await this.wordRepo.save(wordsToSave);
-    }
-
-    return savedDictionary;
   }
 
   async deleteDictionary(id: number, userId: number) {
@@ -153,8 +159,11 @@ export class DictionaryService {
       throw new NotFoundException(`Dictionary with ID ${id} not found`);
     }
 
-    await this.wordRepo.delete({ dictionaryId: id });
-    await this.dictionaryRepo.delete({ dictionaryId: id });
+    await this.dictionaryRepo.manager.transaction(async (manager) => {
+      await manager.getRepository(Word).delete({ dictionaryId: id });
+      await manager.getRepository(Dictionary).delete({ dictionaryId: id });
+    });
+
     return { message: 'Dictionary deleted successfully', id };
   }
 
@@ -172,48 +181,59 @@ export class DictionaryService {
       throw new ForbiddenException('You do not have access to copy this dictionary');
     }
 
-    const {
-      dictionaryId: _,
-      user: __,
-      isPublic: ___,
-      views: ____,
-      viewers: _v,
-      averageRating: _____,
-      totalRatings: ______,
-      ratingsMap: _______,
-      ...copyData
-    } = original;
-    const newDict = this.dictionaryRepo.create({
-      ...copyData,
-      dictionaryName: `${original.dictionaryName} - copy`,
-      user: { id: userId },
-      isPublic: false,
-      views: 0,
-      viewers: [],
-      averageRating: 0,
-      totalRatings: 0,
-      ratingsMap: {},
-    });
-    const savedDict = await this.dictionaryRepo.save(newDict);
+    return this.dictionaryRepo.manager.transaction(async (manager) => {
+      const dictRepo = manager.getRepository(Dictionary);
+      const wordRepo = manager.getRepository(Word);
 
-    const words = await this.wordRepo.find({
-      where: { dictionaryId: id },
-    });
+      const newDict = dictRepo.create({
+        dictionaryName: `${original.dictionaryName} - copy`,
+        language: original.language,
+        coverImage: original.coverImage,
+        showName: original.showName,
+        showLanguage: original.showLanguage,
+        showFlag: original.showFlag,
+        showProgress: original.showProgress,
+        showImported: original.showImported,
+        isImported: original.isImported,
+        isPinned: false,
+        editOpacity: original.editOpacity,
+        pinOpacity: original.pinOpacity,
+        tags: original.tags ? [...original.tags] : [],
+        user: { id: userId },
+        isPublic: false,
+        views: 0,
+        viewers: [],
+        averageRating: 0,
+        totalRatings: 0,
+        ratingsMap: {},
+      });
 
-    if (words.length > 0) {
-      const wordsToCopy = this.wordRepo.create(
-        words.map((w) => {
-          const { id: __, ...wordData } = w;
-          return {
-            ...wordData,
+      const savedDict = await dictRepo.save(newDict);
+
+      const words = await wordRepo.find({
+        where: { dictionaryId: id },
+      });
+
+      if (words.length > 0) {
+        const wordsToCopy = wordRepo.create(
+          words.map((w) => ({
+            text: w.text,
+            translate: w.translate,
+            transcription: w.transcription,
+            partOfSpeech: w.partOfSpeech,
+            extraForms: w.extraForms ? [...w.extraForms] : [],
+            examples: w.examples ? [...w.examples] : [],
             dictionaryId: savedDict.dictionaryId,
-          };
-        }),
-      );
-      await this.wordRepo.save(wordsToCopy);
-    }
+            remembered: false,
+            interval: 0,
+            nextReviewDate: null,
+          })),
+        );
+        await wordRepo.save(wordsToCopy);
+      }
 
-    return savedDict;
+      return savedDict;
+    });
   }
 
   async getWordsGrouped(dictionaryId: number, userId: number) {

@@ -107,12 +107,9 @@ export class DuelGateway implements OnGatewayConnection, OnGatewayDisconnect {
         });
       } catch (error) {
         this.logger.error(`[DUEL] Match error: ${error}`);
-        this.server.to(player1.socketId).emit('match_error', {
-          message: 'Недостатньо слів у вибраних словниках для початку дуелі.',
-        });
-        this.server.to(player2.socketId).emit('match_error', {
-          message: 'Недостатньо слів у вибраних словниках для початку дуелі.',
-        });
+        const errorMessage = 'Not enough words in the selected dictionaries to start a duel.';
+        this.server.to(player1.socketId).emit('match_error', { message: errorMessage });
+        this.server.to(player2.socketId).emit('match_error', { message: errorMessage });
       }
     }
   }

@@ -41,10 +41,8 @@ function UserProfile() {
     }
 
     window.addEventListener('storage', checkUser);
-    const interval = setInterval(checkUser, 1000);
     return () => {
       window.removeEventListener('storage', checkUser);
-      clearInterval(interval);
     }
   }, [])
 

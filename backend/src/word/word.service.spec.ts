@@ -178,4 +178,33 @@ describe('WordService', () => {
       expect(result.language).toBe('en');
     });
   });
+
+  describe('resetDictionaryWords', () => {
+    it('should reset all words in dictionary with a single batch update', async () => {
+      dictRepo.findOne.mockResolvedValue({ dictionaryId: 5, user: { id: 1 } });
+      wordRepo.update.mockResolvedValue({ affected: 10 });
+
+      const result = await service.resetDictionaryWords(5, 1);
+
+      expect(wordRepo.update).toHaveBeenCalledWith(
+        { dictionaryId: 5 },
+        {
+          remembered: false,
+          interval: 0,
+          nextReviewDate: null,
+        },
+      );
+      expect(result).toEqual({
+        message: 'Dictionary progress reset successfully',
+        dictionaryId: 5,
+      });
+    });
+
+    it('should throw ForbiddenException if user does not own the dictionary', async () => {
+      dictRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.resetDictionaryWords(5, 2)).rejects.toThrow(ForbiddenException);
+      expect(wordRepo.update).not.toHaveBeenCalled();
+    });
+  });
 });

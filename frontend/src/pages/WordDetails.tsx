@@ -88,20 +88,40 @@ function WordDetails() {
     fetchWordDetails();
   }, [fetchWordDetails]);
 
-  // Fetch real transcription from Dictionary API if missing
+  // Fetch real transcription & part of speech from Dictionary API if missing
   useEffect(() => {
-    if (word) {
-      if (word.transcription) {
-        setTranscription(word.transcription);
-      } else {
-        setTranscription('');
-      }
-      
-      if (word.partOfSpeech) {
-        setPartOfSpeech(word.partOfSpeech);
-      } else {
-        setPartOfSpeech('');
-      }
+    if (!word) return;
+
+    setTranscription(word.transcription || '');
+    setPartOfSpeech(word.partOfSpeech || '');
+
+    if ((!word.transcription || !word.partOfSpeech) && word.language === 'english') {
+      let isCancelled = false;
+      api
+        .get<any[]>(`/words/external-info/${encodeURIComponent(word.text)}`)
+        .then((data) => {
+          if (isCancelled || !Array.isArray(data) || data.length === 0) return;
+          const entry = data[0];
+          const fetchedPhonetic =
+            entry.phonetic ||
+            entry.phonetics?.find((p: any) => p.text)?.text ||
+            '';
+          const fetchedPos = entry.meanings?.[0]?.partOfSpeech || '';
+
+          if (!word.transcription && fetchedPhonetic) {
+            setTranscription(fetchedPhonetic);
+          }
+          if (!word.partOfSpeech && fetchedPos) {
+            setPartOfSpeech(fetchedPos);
+          }
+        })
+        .catch(() => {
+          // Silently ignore external lookup errors
+        });
+
+      return () => {
+        isCancelled = true;
+      };
     }
   }, [word]);
 

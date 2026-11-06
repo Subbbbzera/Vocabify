@@ -62,12 +62,21 @@ export function disconnectSocket(): void {
   }
 }
 
+let sharedAudioCtx: AudioContext | null = null;
+
 export function playNotificationSound() {
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtx) return;
-    const ctx = new AudioCtx();
 
+    if (!sharedAudioCtx || sharedAudioCtx.state === 'closed') {
+      sharedAudioCtx = new AudioCtx();
+    }
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume().catch(() => {});
+    }
+
+    const ctx = sharedAudioCtx;
     const now = ctx.currentTime;
 
     const osc1 = ctx.createOscillator();
@@ -91,8 +100,8 @@ export function playNotificationSound() {
     gain2.connect(ctx.destination);
     osc2.start(now + 0.08);
     osc2.stop(now + 0.35);
-  } catch (e) {
-
+  } catch {
+    // Ignore audio playback errors when browser blocks autoplay
   }
 }
 

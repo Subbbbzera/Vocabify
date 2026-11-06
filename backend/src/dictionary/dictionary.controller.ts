@@ -10,6 +10,7 @@ import {
   UseGuards,
   Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { DictionaryService } from './dictionary.service';
 import {
@@ -128,18 +129,29 @@ export class DictionaryController {
   @Get(':id/export')
   async exportDictionary(
     @Param('id', ParseIntPipe) id: number,
-    @Res() res: any,
+    @Res() res: Response,
     @CurrentUser('id') userId: number,
   ) {
-    const dictionary: any = await this.dictionaryService.getDictionaryById(id, userId);
-    const wordsObj: any = await this.dictionaryService.getWordsGrouped(id, userId);
+    const dictionary = await this.dictionaryService.getDictionaryById(id, userId);
+    const wordsObj = await this.dictionaryService.getWordsGrouped(id, userId);
 
-    const words = Object.values(wordsObj).flat().map((w: any) => {
-      const { id, dictionaryId, createdAt, updatedAt, ...wordData } = w;
-      return wordData;
-    });
+    const words = Object.values(wordsObj)
+      .flat()
+      .map(({ id: _id, dictionaryId: _dictId, ...wordData }) => wordData);
 
-    const { dictionaryId, user, amountWord, rememberedWords, views, viewers, averageRating, totalRatings, ratingsMap, isPublic, ...dictData } = dictionary;
+    const {
+      dictionaryId: _dId,
+      user: _u,
+      amountWord: _aw,
+      rememberedWords: _rw,
+      views: _v,
+      viewers: _vw,
+      averageRating: _ar,
+      totalRatings: _tr,
+      ratingsMap: _rm,
+      isPublic: _pub,
+      ...dictData
+    } = dictionary;
 
     const exportData = {
       ...dictData,
