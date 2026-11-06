@@ -27,13 +27,14 @@ async function startServer() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || corsOrigins.includes('*') || corsOrigins.includes(origin)) {
+      // Requests without an Origin header (curl, server-to-server, same-origin) are allowed.
+      if (!origin || corsOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(null, true); // fallback for dynamic deployments while preserving explicit check structure
+        callback(new Error(`Origin ${origin} is not allowed by CORS`), false);
       }
     },
-    allowedHeaders: ['Content-Type', 'Authorization', 'user-id'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   });

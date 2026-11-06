@@ -64,7 +64,7 @@ describe('AuthService', () => {
 
   describe('register', () => {
     it('should throw ConflictException if user with email already exists', async () => {
-      queryBuilder.getOne.mockResolvedValue({ id: 1, email: 'test@example.com' });
+      userRepo.findOneBy.mockResolvedValue({ id: 1, email: 'test@example.com' });
 
       await expect(
         service.register({
@@ -76,7 +76,7 @@ describe('AuthService', () => {
     });
 
     it('should create and return user with token when registration is valid', async () => {
-      queryBuilder.getOne.mockResolvedValue(null);
+      userRepo.findOneBy.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
 
       const mockSavedUser = {
@@ -112,7 +112,7 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should throw UnauthorizedException if user is not found', async () => {
-      queryBuilder.getOne.mockResolvedValue(null);
+      userRepo.findOneBy.mockResolvedValue(null);
 
       await expect(
         service.login({
@@ -123,7 +123,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException if password does not match', async () => {
-      queryBuilder.getOne.mockResolvedValue({
+      userRepo.findOneBy.mockResolvedValue({
         id: 1,
         email: 'test@example.com',
         password: 'hashed-password',
@@ -148,7 +148,7 @@ describe('AuthService', () => {
         lastPracticeDate: null,
       };
 
-      queryBuilder.getOne.mockResolvedValue(mockUser);
+      userRepo.findOneBy.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       userRepo.save.mockResolvedValue(mockUser);
 

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { DictionaryModule } from './dictionary/dictionary.module';
 import { Dictionary } from './dictionary/entities/dictionary.entity';
 import { WordModule } from './word/word.module';
@@ -19,6 +21,12 @@ import { DuelResult } from './duel/entities/duel-result.entity';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 60,
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -40,7 +48,7 @@ import { DuelResult } from './duel/entities/duel-result.entity';
               }),
           ssl: isSsl ? { rejectUnauthorized: false } : false,
           entities: [Dictionary, Word, User, Friendship, DirectMessage, DuelResult],
-          synchronize: true,
+          synchronize: config.get<string>('NODE_ENV') !== 'production',
         };
       },
     }),
@@ -51,6 +59,11 @@ import { DuelResult } from './duel/entities/duel-result.entity';
     DuelModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

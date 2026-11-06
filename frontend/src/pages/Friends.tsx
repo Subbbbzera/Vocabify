@@ -114,7 +114,6 @@ function Friends() {
           api.get<{
             id: number;
             name: string;
-            email: string;
             avatarUrl?: string;
             streakCount: number;
             stats: { totalDictionaries: number; totalWords: number; learnedWords: number };
@@ -124,7 +123,6 @@ function Friends() {
                 setActiveChatFriend({
                   id: data.id,
                   name: data.name,
-                  email: data.email,
                   avatarUrl: data.avatarUrl,
                   streakCount: data.streakCount || 0
                 } as User)
@@ -432,7 +430,6 @@ function Friends() {
       const data = await api.get<{
         id: number;
         name: string;
-        email: string;
         avatarUrl?: string;
         streakCount: number;
         stats: { totalDictionaries: number; totalWords: number; learnedWords: number };
@@ -446,7 +443,7 @@ function Friends() {
   const filteredFriends = friends.filter(item => {
     if (!friendFilterText.trim()) return true
     const q = friendFilterText.toLowerCase()
-    return item.friend.name.toLowerCase().includes(q) || item.friend.email.toLowerCase().includes(q)
+    return item.friend.name.toLowerCase().includes(q)
   })
 
   const formatMsgTime = (dateStr: string) => {
@@ -583,8 +580,6 @@ function Friends() {
                       <span className={onlineUserIds.has(activeChatFriend.id) ? 'text-blue-400 font-semibold' : 'text-slate-400'}>
                         {formatLastSeen(activeChatFriend.lastSeen, onlineUserIds.has(activeChatFriend.id))}
                       </span>
-                      <span className='text-slate-600'>•</span>
-                      <span className='text-slate-400 group-hover:text-slate-300 transition-colors truncate max-w-[160px]'>{activeChatFriend.email}</span>
                     </div>
                   </div>
                 </div>
@@ -837,7 +832,7 @@ function Friends() {
                       type='text'
                       value={friendFilterText}
                       onChange={e => setFriendFilterText(e.target.value)}
-                      placeholder='Filter friends by name or email...'
+                      placeholder='Filter friends by name...'
                       className='w-full pl-9 pr-3 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-500 outline-none focus:border-blue-500'
                     />
                   </div>
@@ -855,7 +850,7 @@ function Friends() {
                     <div className='space-y-1 max-w-sm mx-auto'>
                       <h3 className='text-base font-bold text-white'>No friends yet</h3>
                       <p className='text-xs text-slate-400'>
-                        Learning is more fun together! Find your friends by name or email and start practicing.
+                        Learning is more fun together! Find your friends by name and start practicing.
                       </p>
                     </div>
                     <button
@@ -905,8 +900,6 @@ function Friends() {
                                 <span className={onlineUserIds.has(item.friend.id) ? 'text-blue-400 font-semibold' : 'text-slate-400'}>
                                   {formatLastSeen(item.friend.lastSeen, onlineUserIds.has(item.friend.id))}
                                 </span>
-                                <span className='text-slate-600'>•</span>
-                                <span className='truncate group-hover:text-slate-300 transition-colors'>{item.friend.email}</span>
                               </div>
                             </div>
                           </div>
@@ -988,7 +981,6 @@ function Friends() {
                                   </span>
                                 )}
                               </div>
-                              <p className='text-[11px] text-slate-400 group-hover:text-slate-300 transition-colors truncate'>{req.user.email}</p>
                             </div>
                           </div>
 
@@ -1044,7 +1036,6 @@ function Friends() {
                             </div>
                             <div className='min-w-0'>
                               <h3 className='text-xs font-bold text-white group-hover:text-blue-400 transition-colors truncate'>{req.user.name}</h3>
-                              <p className='text-[10px] text-slate-400 group-hover:text-slate-300 transition-colors truncate'>{req.user.email}</p>
                             </div>
                           </div>
 
@@ -1071,7 +1062,7 @@ function Friends() {
                     autoFocus
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder='Search users by name or email address...'
+                    placeholder='Search users by name...'
                     className='w-full pl-11 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder:text-slate-500 outline-none focus:border-blue-500 transition-colors'
                   />
                   {isSearching && (
@@ -1089,7 +1080,7 @@ function Friends() {
                     <div className='space-y-1 max-w-sm mx-auto'>
                       <h3 className='text-base font-bold text-white'>Search for other learners</h3>
                       <p className='text-xs text-slate-400'>
-                        Type a name or email in the box above to find other members and send them friend requests.
+                        Type a name in the box above to find other members and send them friend requests.
                       </p>
                     </div>
                   </div>
@@ -1127,7 +1118,6 @@ function Friends() {
                                   </span>
                                 )}
                               </div>
-                              <p className='text-xs text-slate-400 group-hover:text-slate-300 transition-colors truncate'>{userItem.email}</p>
                             </div>
                           </div>
                         </div>
@@ -1229,7 +1219,6 @@ function Friends() {
                 </div>
                 <div>
                   <h3 className='text-xl font-bold text-white'>{inspectUser.user.name}</h3>
-                  <p className='text-xs text-slate-400 mt-0.5'>{inspectUser.user.email}</p>
                 </div>
               </div>
 

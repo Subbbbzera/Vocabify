@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Friendship } from './entities/friendship.entity';
 import { DirectMessage } from './entities/message.entity';
 import { User } from '../user/entities/user.entity';
@@ -26,24 +26,63 @@ export class FriendService {
   ) {}
 
   async getUserStats(userId: number) {
-    const totalDictionaries = await this.dictionaryRepo.count({
-      where: { user: { id: userId } },
-    });
+    const statsMap = await this.getBatchUserStats([userId]);
+    return statsMap[userId] || { totalDictionaries: 0, totalWords: 0, learnedWords: 0 };
+  }
 
-    const totalWords = await this.wordRepo
-      .createQueryBuilder('word')
-      .innerJoin('dictionary', 'dict', 'word.dictionaryId = dict.dictionaryId')
-      .where('dict.userId = :userId', { userId })
-      .getCount();
+  private async getBatchUserStats(userIds: number[]) {
+    const uniqueIds = Array.from(new Set(userIds));
+    const result: Record<
+      number,
+      { totalDictionaries: number; totalWords: number; learnedWords: number }
+    > = {};
 
-    const learnedWords = await this.wordRepo
-      .createQueryBuilder('word')
-      .innerJoin('dictionary', 'dict', 'word.dictionaryId = dict.dictionaryId')
-      .where('dict.userId = :userId', { userId })
-      .andWhere('word.remembered = true')
-      .getCount();
+    for (const id of uniqueIds) {
+      result[id] = { totalDictionaries: 0, totalWords: 0, learnedWords: 0 };
+    }
 
-    return { totalDictionaries, totalWords, learnedWords };
+    if (uniqueIds.length === 0) {
+      return result;
+    }
+
+    const [dictCounts, wordCounts] = await Promise.all([
+      this.dictionaryRepo
+        .createQueryBuilder('dict')
+        .select('dict.userId', 'userId')
+        .addSelect('COUNT(*)', 'count')
+        .where('dict.userId IN (:...userIds)', { userIds: uniqueIds })
+        .groupBy('dict.userId')
+        .getRawMany(),
+      this.wordRepo
+        .createQueryBuilder('word')
+        .innerJoin('dictionary', 'dict', 'word.dictionaryId = dict.dictionaryId')
+        .select('dict.userId', 'userId')
+        .addSelect('COUNT(*)', 'totalWords')
+        .addSelect(
+          'SUM(CASE WHEN word.remembered = true THEN 1 ELSE 0 END)',
+          'learnedWords',
+        )
+        .where('dict.userId IN (:...userIds)', { userIds: uniqueIds })
+        .groupBy('dict.userId')
+        .getRawMany(),
+    ]);
+
+    for (const row of dictCounts) {
+      const uid = Number(row.userId || row.userid);
+      if (result[uid]) {
+        result[uid].totalDictionaries = Number(row.count || 0);
+      }
+    }
+
+    for (const row of wordCounts) {
+      const uid = Number(row.userId || row.userid);
+      if (result[uid]) {
+        result[uid].totalWords = Number(row.totalWords || row.totalwords || 0);
+        result[uid].learnedWords = Number(row.learnedWords || row.learnedwords || 0);
+      }
+    }
+
+    return result;
   }
 
   async getFriends(userId: number) {
@@ -56,109 +95,135 @@ export class FriendService {
       order: { updatedAt: 'DESC' },
     });
 
-    const friendsList = await Promise.all(
-      friendships.map(async (f) => {
-        const friend = f.sender.id === userId ? f.receiver : f.sender;
-        const stats = await this.getUserStats(friend.id);
+    if (friendships.length === 0) {
+      return [];
+    }
 
-        const unreadCount = await this.messageRepo.count({
-          where: {
-            sender: { id: friend.id },
-            receiver: { id: userId },
-            isRead: false,
-          },
-        });
-
-        const lastMessage = await this.messageRepo.findOne({
-          where: [
-            { sender: { id: userId }, receiver: { id: friend.id } },
-            { sender: { id: friend.id }, receiver: { id: userId } },
-          ],
-          order: { createdAt: 'DESC' },
-        });
-
-        return {
-          friendshipId: f.id,
-          friend: {
-            id: friend.id,
-            name: friend.name,
-            email: friend.email,
-            avatarUrl: friend.avatarUrl,
-            streakCount: friend.streakCount,
-            lastPracticeDate: friend.lastPracticeDate,
-            lastSeen: friend.lastSeen,
-            isOnline: this.chatGateway ? this.chatGateway.isUserOnline(friend.id) : false,
-            duelWins: friend.duelWins,
-            duelLosses: friend.duelLosses,
-          },
-          stats,
-          unreadCount,
-          lastMessage: lastMessage
-            ? {
-                text: lastMessage.text,
-                createdAt: lastMessage.createdAt,
-                senderId: lastMessage.sender.id,
-              }
-            : null,
-        };
-      }),
+    const friendIds = friendships.map((f) =>
+      f.sender.id === userId ? f.receiver.id : f.sender.id,
     );
 
-    return friendsList;
+    const [statsMap, unreadRows, messages] = await Promise.all([
+      this.getBatchUserStats(friendIds),
+      this.messageRepo
+        .createQueryBuilder('msg')
+        .select('msg.senderId', 'senderId')
+        .addSelect('COUNT(*)', 'count')
+        .where('msg.receiverId = :userId', { userId })
+        .andWhere('msg.senderId IN (:...friendIds)', { friendIds })
+        .andWhere('msg.isRead = false')
+        .groupBy('msg.senderId')
+        .getRawMany(),
+      this.messageRepo.find({
+        where: [
+          { sender: { id: userId }, receiver: { id: In(friendIds) } },
+          { sender: { id: In(friendIds) }, receiver: { id: userId } },
+        ],
+        order: { createdAt: 'DESC' },
+      }),
+    ]);
+
+    const unreadMap: Record<number, number> = {};
+    for (const row of unreadRows) {
+      const sid = Number(row.senderId || row.senderid);
+      unreadMap[sid] = Number(row.count || 0);
+    }
+
+    const lastMessageMap = new Map<
+      number,
+      { text: string; createdAt: Date; senderId: number }
+    >();
+    for (const msg of messages) {
+      const partnerId = msg.sender.id === userId ? msg.receiver.id : msg.sender.id;
+      if (!lastMessageMap.has(partnerId)) {
+        lastMessageMap.set(partnerId, {
+          text: msg.text,
+          createdAt: msg.createdAt,
+          senderId: msg.sender.id,
+        });
+      }
+    }
+
+    return friendships.map((f) => {
+      const friend = f.sender.id === userId ? f.receiver : f.sender;
+      return {
+        friendshipId: f.id,
+        friend: {
+          id: friend.id,
+          name: friend.name,
+          avatarUrl: friend.avatarUrl,
+          streakCount: friend.streakCount,
+          lastPracticeDate: friend.lastPracticeDate,
+          lastSeen: friend.lastSeen,
+          isOnline: this.chatGateway ? this.chatGateway.isUserOnline(friend.id) : false,
+          duelWins: friend.duelWins,
+          duelLosses: friend.duelLosses,
+        },
+        stats: statsMap[friend.id] || {
+          totalDictionaries: 0,
+          totalWords: 0,
+          learnedWords: 0,
+        },
+        unreadCount: unreadMap[friend.id] || 0,
+        lastMessage: lastMessageMap.get(friend.id) || null,
+      };
+    });
   }
 
   async getRequests(userId: number) {
-    const incoming = await this.friendshipRepo.find({
-      where: { receiver: { id: userId }, status: 'PENDING' },
-      relations: ['sender'],
-      order: { createdAt: 'DESC' },
-    });
-
-    const outgoing = await this.friendshipRepo.find({
-      where: { sender: { id: userId }, status: 'PENDING' },
-      relations: ['receiver'],
-      order: { createdAt: 'DESC' },
-    });
-
-    const incomingWithStats = await Promise.all(
-      incoming.map(async (r) => {
-        const stats = await this.getUserStats(r.sender.id);
-        return {
-          id: r.id,
-          createdAt: r.createdAt,
-          user: {
-            id: r.sender.id,
-            name: r.sender.name,
-            email: r.sender.email,
-            avatarUrl: r.sender.avatarUrl,
-            streakCount: r.sender.streakCount,
-            duelWins: r.sender.duelWins,
-            duelLosses: r.sender.duelLosses,
-          },
-          stats,
-        };
+    const [incoming, outgoing] = await Promise.all([
+      this.friendshipRepo.find({
+        where: { receiver: { id: userId }, status: 'PENDING' },
+        relations: ['sender'],
+        order: { createdAt: 'DESC' },
       }),
-    );
-
-    const outgoingWithStats = await Promise.all(
-      outgoing.map(async (r) => {
-        const stats = await this.getUserStats(r.receiver.id);
-        return {
-          id: r.id,
-          createdAt: r.createdAt,
-          user: {
-            id: r.receiver.id,
-            name: r.receiver.name,
-            email: r.receiver.email,
-            avatarUrl: r.receiver.avatarUrl,
-            streakCount: r.receiver.streakCount,
-            duelWins: r.receiver.duelWins,
-            duelLosses: r.receiver.duelLosses,
-          },
-          stats,
-        };
+      this.friendshipRepo.find({
+        where: { sender: { id: userId }, status: 'PENDING' },
+        relations: ['receiver'],
+        order: { createdAt: 'DESC' },
       }),
-    );
+    ]);
+
+    const statsMap = await this.getBatchUserStats([
+      ...incoming.map((r) => r.sender.id),
+      ...outgoing.map((r) => r.receiver.id),
+    ]);
+
+    const incomingWithStats = incoming.map((r) => ({
+      id: r.id,
+      createdAt: r.createdAt,
+      user: {
+        id: r.sender.id,
+        name: r.sender.name,
+        avatarUrl: r.sender.avatarUrl,
+        streakCount: r.sender.streakCount,
+        duelWins: r.sender.duelWins,
+        duelLosses: r.sender.duelLosses,
+      },
+      stats: statsMap[r.sender.id] || {
+        totalDictionaries: 0,
+        totalWords: 0,
+        learnedWords: 0,
+      },
+    }));
+
+    const outgoingWithStats = outgoing.map((r) => ({
+      id: r.id,
+      createdAt: r.createdAt,
+      user: {
+        id: r.receiver.id,
+        name: r.receiver.name,
+        avatarUrl: r.receiver.avatarUrl,
+        streakCount: r.receiver.streakCount,
+        duelWins: r.receiver.duelWins,
+        duelLosses: r.receiver.duelLosses,
+      },
+      stats: statsMap[r.receiver.id] || {
+        totalDictionaries: 0,
+        totalWords: 0,
+        learnedWords: 0,
+      },
+    }));
 
     return {
       incoming: incomingWithStats,
@@ -263,58 +328,65 @@ export class FriendService {
     const users = await this.userRepo
       .createQueryBuilder('user')
       .where('user.id != :currentUserId', { currentUserId })
-      .andWhere(
-        '(LOWER(user.name) LIKE LOWER(:query) OR LOWER(user.email) LIKE LOWER(:query))',
-        { query: `%${cleanQuery}%` },
-      )
+      .andWhere('LOWER(user.name) LIKE LOWER(:query)', { query: `%${cleanQuery}%` })
       .take(20)
       .getMany();
 
-    const results = await Promise.all(
-      users.map(async (u) => {
-        const stats = await this.getUserStats(u.id);
+    if (users.length === 0) return [];
 
-        const friendship = await this.friendshipRepo.findOne({
-          where: [
-            { sender: { id: currentUserId }, receiver: { id: u.id } },
-            { sender: { id: u.id }, receiver: { id: currentUserId } },
-          ],
-          relations: ['sender', 'receiver'],
-        });
+    const foundIds = users.map((u) => u.id);
+    const [statsMap, friendships] = await Promise.all([
+      this.getBatchUserStats(foundIds),
+      this.friendshipRepo.find({
+        where: [
+          { sender: { id: currentUserId }, receiver: { id: In(foundIds) } },
+          { sender: { id: In(foundIds) }, receiver: { id: currentUserId } },
+        ],
+        relations: ['sender', 'receiver'],
+      }),
+    ]);
 
-        let relationship: 'NONE' | 'FRIENDS' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' = 'NONE';
-        let requestId: number | null = null;
+    const friendshipByTargetId = new Map<number, Friendship>();
+    for (const f of friendships) {
+      const targetId = f.sender.id === currentUserId ? f.receiver.id : f.sender.id;
+      friendshipByTargetId.set(targetId, f);
+    }
 
-        if (friendship) {
-          if (friendship.status === 'ACCEPTED') {
-            relationship = 'FRIENDS';
-          } else if (friendship.status === 'PENDING') {
-            if (friendship.sender.id === currentUserId) {
-              relationship = 'REQUEST_SENT';
-            } else {
-              relationship = 'REQUEST_RECEIVED';
-              requestId = friendship.id;
-            }
+    return users.map((u) => {
+      const friendship = friendshipByTargetId.get(u.id);
+      let relationship: 'NONE' | 'FRIENDS' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' = 'NONE';
+      let requestId: number | null = null;
+
+      if (friendship) {
+        if (friendship.status === 'ACCEPTED') {
+          relationship = 'FRIENDS';
+        } else if (friendship.status === 'PENDING') {
+          if (friendship.sender.id === currentUserId) {
+            relationship = 'REQUEST_SENT';
+          } else {
+            relationship = 'REQUEST_RECEIVED';
+            requestId = friendship.id;
           }
         }
+      }
 
-        return {
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          avatarUrl: u.avatarUrl,
-          streakCount: u.streakCount,
-          duelWins: u.duelWins,
-          duelLosses: u.duelLosses,
-          lastPracticeDate: u.lastPracticeDate,
-          stats,
-          relationship,
-          requestId,
-        };
-      }),
-    );
-
-    return results;
+      return {
+        id: u.id,
+        name: u.name,
+        avatarUrl: u.avatarUrl,
+        streakCount: u.streakCount,
+        duelWins: u.duelWins,
+        duelLosses: u.duelLosses,
+        lastPracticeDate: u.lastPracticeDate,
+        stats: statsMap[u.id] || {
+          totalDictionaries: 0,
+          totalWords: 0,
+          learnedWords: 0,
+        },
+        relationship,
+        requestId,
+      };
+    });
   }
 
   async getUserDetails(userId: number) {
@@ -328,7 +400,6 @@ export class FriendService {
     return {
       id: user.id,
       name: user.name,
-      email: user.email,
       avatarUrl: user.avatarUrl,
       streakCount: user.streakCount,
       lastPracticeDate: user.lastPracticeDate,
@@ -395,7 +466,10 @@ export class FriendService {
 
     if (replyToId) {
       const origMsg = await this.messageRepo.findOne({
-        where: { id: replyToId },
+        where: [
+          { id: replyToId, sender: { id: userId }, receiver: { id: friendId } },
+          { id: replyToId, sender: { id: friendId }, receiver: { id: userId } },
+        ],
         relations: ['sender'],
       });
       if (origMsg) {
@@ -608,13 +682,12 @@ export class FriendService {
       }
     }
 
-    const messageRequests = Array.from(nonFriendMessagesMap.entries()).map(([senderId, msgs]) => {
+    const messageRequests = Array.from(nonFriendMessagesMap.entries()).map(([_, msgs]) => {
       const latestMsg = msgs[0];
       return {
         sender: {
           id: latestMsg.sender.id,
           name: latestMsg.sender.name,
-          email: latestMsg.sender.email,
           avatarUrl: latestMsg.sender.avatarUrl,
           streakCount: latestMsg.sender.streakCount,
         },
@@ -629,7 +702,6 @@ export class FriendService {
       sender: {
         id: req.sender.id,
         name: req.sender.name,
-        email: req.sender.email,
         avatarUrl: req.sender.avatarUrl,
         streakCount: req.sender.streakCount,
       },

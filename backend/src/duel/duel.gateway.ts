@@ -76,10 +76,25 @@ export class DuelGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+    const profile = await this.duelService.getPlayerQueueProfile(
+      userId,
+      data?.dictionaryIds || [],
+    );
+
+    if (profile.dictionaryIds.length === 0) {
+      client.emit('match_error', {
+        message: 'No valid dictionaries selected to start a duel.',
+      });
+      return;
+    }
+
     const match = this.duelService.joinQueue({
-      ...data,
       userId,
       socketId: client.id,
+      username: profile.username,
+      winrate: profile.winrate,
+      dictionaryIds: profile.dictionaryIds,
+      language: String(data?.language || 'mixed').trim(),
     });
 
     if (match) {

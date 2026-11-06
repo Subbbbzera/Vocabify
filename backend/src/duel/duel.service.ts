@@ -52,6 +52,7 @@ export class DuelService {
   private activeMatches = new Map<string, ActiveMatch>();
 
   private processedRooms = new Set<string>();
+  private static readonly MAX_PROCESSED_ROOMS = 1000;
 
   constructor(
     @InjectRepository(User) private userRepo: Repository<User>,
@@ -59,6 +60,31 @@ export class DuelService {
     @InjectRepository(Dictionary) private dictRepo: Repository<Dictionary>,
     @InjectRepository(Word) private wordRepo: Repository<Word>,
   ) {}
+
+  async getPlayerQueueProfile(userId: number, requestedDictIds: number[]) {
+    const user = await this.userRepo.findOneBy({ id: userId });
+    const username = user?.name || `Player #${userId}`;
+    const wins = user?.duelWins || 0;
+    const totalGames = wins + (user?.duelLosses || 0);
+    const winrate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+
+    let validDictIds: number[] = [];
+    if (Array.isArray(requestedDictIds) && requestedDictIds.length > 0) {
+      const cleanIds = requestedDictIds.map(Number).filter((id) => !isNaN(id) && id > 0);
+      if (cleanIds.length > 0) {
+        const accessibleDicts = await this.dictRepo.find({
+          where: [
+            { dictionaryId: In(cleanIds), user: { id: userId } },
+            { dictionaryId: In(cleanIds), isPublic: true },
+          ],
+          select: ['dictionaryId'],
+        });
+        validDictIds = accessibleDicts.map((d) => d.dictionaryId);
+      }
+    }
+
+    return { username, winrate, dictionaryIds: validDictIds };
+  }
 
   joinQueue(player: QueuePlayer) {
     if (!this.queues[player.language]) {
@@ -301,6 +327,12 @@ export class DuelService {
   ) {
     if (this.processedRooms.has(roomId)) {
       return;
+    }
+    if (this.processedRooms.size >= DuelService.MAX_PROCESSED_ROOMS) {
+      const oldestKey = this.processedRooms.values().next().value;
+      if (oldestKey) {
+        this.processedRooms.delete(oldestKey);
+      }
     }
     this.processedRooms.add(roomId);
 

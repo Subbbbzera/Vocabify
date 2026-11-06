@@ -15,6 +15,7 @@ describe('DuelGateway', () => {
           useValue: {
             leaveQueue: jest.fn(),
             joinQueue: jest.fn(),
+            getPlayerQueueProfile: jest.fn(),
             createMatch: jest.fn(),
             submitAnswer: jest.fn(),
             isPlayerInMatch: jest.fn(),

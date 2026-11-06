@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '../user/entities/user.entity';
@@ -8,6 +8,8 @@ import { RegisterDto, LoginDto, UpdateProfileDto, ResetPasswordDto } from './dto
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
@@ -24,15 +26,12 @@ export class AuthService {
     const rawPassword = dto.password || '';
     const cleanPassword = rawPassword.trim();
 
-    console.log(`[AuthService.login] Login attempt for: "${dto.email}" (normalized: "${cleanEmail}")`);
+    this.logger.log(`Login attempt for: "${cleanEmail}"`);
 
-    const user = await this.userRepo
-      .createQueryBuilder('user')
-      .where('LOWER(TRIM(user.email)) = LOWER(:email)', { email: cleanEmail })
-      .getOne();
+    const user = await this.userRepo.findOneBy({ email: cleanEmail });
 
     if (!user) {
-      console.warn(`[AuthService.login] User not found for email: "${cleanEmail}"`);
+      this.logger.warn(`User not found for email: "${cleanEmail}"`);
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -42,11 +41,11 @@ export class AuthService {
     }
 
     if (!isMatch) {
-      console.warn(`[AuthService.login] Password verification failed for: "${cleanEmail}" (user ID: ${user.id})`);
+      this.logger.warn(`Password verification failed for: "${cleanEmail}" (user ID: ${user.id})`);
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    console.log(`[AuthService.login] Successfully logged in user ID: ${user.id} (${cleanEmail})`);
+    this.logger.log(`Successfully logged in user ID: ${user.id} (${cleanEmail})`);
     await this.updateStreak(user);
 
     const { password: _, ...result } = user;
@@ -58,10 +57,7 @@ export class AuthService {
     const cleanEmail = (dto.email || '').trim().toLowerCase();
     const cleanName = (dto.name || '').trim();
 
-    const existingUser = await this.userRepo
-      .createQueryBuilder('user')
-      .where('LOWER(TRIM(user.email)) = LOWER(:email)', { email: cleanEmail })
-      .getOne();
+    const existingUser = await this.userRepo.findOneBy({ email: cleanEmail });
 
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
@@ -85,10 +81,7 @@ export class AuthService {
     const rawCurrentPassword = dto.currentPassword || '';
     const cleanCurrentPassword = rawCurrentPassword.trim();
 
-    const user = await this.userRepo
-      .createQueryBuilder('user')
-      .where('LOWER(TRIM(user.email)) = LOWER(:email)', { email: cleanEmail })
-      .getOne();
+    const user = await this.userRepo.findOneBy({ email: cleanEmail });
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or current password');

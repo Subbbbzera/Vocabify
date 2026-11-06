@@ -45,7 +45,7 @@ export type MainDictionaries = {
 export type User = {
   id: number;
   name: string;
-  email: string;
+  email?: string;
   streakCount: number;
   lastPracticeDate?: string;
   avatarUrl?: string;
@@ -83,7 +83,7 @@ export type FriendRequestItem = {
 export type SearchUserItem = {
   id: number;
   name: string;
-  email: string;
+  email?: string;
   avatarUrl?: string;
   streakCount: number;
   lastPracticeDate?: string;
